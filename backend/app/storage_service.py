@@ -2,7 +2,7 @@
 DocTalk — Azure Blob Storage service.
 
 Handles uploading, deleting, and listing documents in Azure Blob Storage.
-Uses DefaultAzureCredential for RBAC-based authentication (no keys needed).
+Uses connection string for authentication.
 """
 
 import os

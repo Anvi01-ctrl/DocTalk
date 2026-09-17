@@ -189,32 +189,202 @@ POST /chat?message=YOUR_QUESTION
 ## Backend API Endpoints (Document Ingestion & Storage)
 
 ### Upload Documents (Multi-file)
-Uploads files to Azure Blob Storage and extracts text using Azure AI Document Intelligence.
+
+Uploads one or more files to Azure Blob Storage and extracts text using Azure AI Document Intelligence.
 
 ```http
 POST /documents/upload
+Content-Type: multipart/form-data
 ```
 
-### List all documents
-Returns metadata for all documents stored persistently.
+**Request:** Send files as `files` form field (multiple allowed).
+
+**Supported file types:** PDF, DOCX, TXT
+
+**Example response:**
+
+```json
+{
+    "documents": [
+        {
+            "document_id": "550e8400-e29b-41d4-a716-446655440000",
+            "filename": "report.pdf",
+            "status": "processed",
+            "error": null
+        },
+        {
+            "document_id": null,
+            "filename": "image.jpg",
+            "status": "failed",
+            "error": "Unsupported file type: .jpg. Only PDF, DOCX, and TXT are supported."
+        }
+    ]
+}
+```
+
+### List All Documents
+
+Returns lightweight summaries (no full text bodies).
 
 ```http
 GET /documents
 ```
 
+**Example response:**
+
+```json
+[
+    {
+        "document_id": "550e8400-e29b-41d4-a716-446655440000",
+        "filename": "report.pdf",
+        "content_type": "application/pdf",
+        "status": "processed",
+        "page_count": 12,
+        "character_count": 22778,
+        "uploaded_at": "2026-09-17T22:40:01.548538"
+    }
+]
+```
+
 ### Get Document Details
-Returns full extracted text and page info for a specific document.
+
+Returns full metadata including extracted page-level content.
 
 ```http
 GET /documents/{document_id}
 ```
 
+**Example response:**
+
+```json
+{
+    "document_id": "550e8400-e29b-41d4-a716-446655440000",
+    "filename": "report.pdf",
+    "content_type": "application/pdf",
+    "blob_path": "550e8400-e29b-41d4-a716-446655440000/report.pdf",
+    "status": "processed",
+    "page_count": 12,
+    "character_count": 22778,
+    "pages": [
+        {
+            "page_number": 1,
+            "text": "Text extracted from page 1..."
+        }
+    ],
+    "error": null,
+    "uploaded_at": "2026-09-17T22:40:01.548538"
+}
+```
+
 ### Delete Document
-Deletes a document from Azure Blob Storage and the metadata store.
+
+Removes the blob from Azure Storage and deletes metadata.
 
 ```http
 DELETE /documents/{document_id}
 ```
+
+Returns HTTP 404 if the document does not exist.
+
+---
+
+## Document Ingestion Module — Setup Guide
+
+### Azure Resources Required
+
+| Resource | Name | Purpose |
+|----------|------|---------|
+| Storage Account | `stdoctalkapp` | Persistent blob storage for uploaded documents |
+| Blob Container | `documents` | Container holding all document blobs |
+| Document Intelligence | `doctalk-docintell` | OCR and text extraction from PDFs |
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in your Azure values:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+| Variable | Description |
+|----------|-------------|
+| `AZURE_STORAGE_ACCOUNT_URL` | Storage account URL (e.g., `https://stdoctalkapp.blob.core.windows.net`) |
+| `AZURE_STORAGE_CONTAINER` | Blob container name (default: `documents`) |
+| `AZURE_STORAGE_CONNECTION_STRING` | Storage account connection string (from Azure Portal → Storage Account → Access keys) |
+| `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` | Document Intelligence endpoint URL |
+| `AZURE_DOCUMENT_INTELLIGENCE_KEY` | Document Intelligence API key (from Azure Portal → Resource → Keys and Endpoint) |
+
+**Security:** Never commit `.env` to Git. It is excluded via `.gitignore`.
+
+### Authentication
+
+- **Blob Storage:** Uses connection string (from `.env`)
+- **Document Intelligence:** Uses API key (from `.env`)
+- **Azure AI Foundry (chat):** Uses `InteractiveBrowserCredential` (existing, unchanged)
+
+### Backend Project Structure
+
+```text
+backend/
+├── app/
+│   ├── main.py               # FastAPI app, router registration, existing AI chat
+│   ├── document_routes.py     # Document ingestion API routes
+│   ├── document_service.py    # Text extraction (Document Intelligence + fallbacks)
+│   ├── storage_service.py     # Azure Blob Storage operations
+│   ├── metadata_store.py      # JSON-based persistent metadata storage
+│   └── document_models.py     # Pydantic models and contracts
+├── requirements.txt
+├── .env                       # Local secrets (NOT committed)
+└── .env.example               # Template with placeholder values
+```
+
+### Blob Storage Structure
+
+```text
+documents/                     # Azure Blob container
+├── <document_id>/
+│   └── <original_filename>    # e.g., report.pdf
+├── <document_id>/
+│   └── <original_filename>
+```
+
+### Team Contract (for Team Member 2 — RAG)
+
+Documents are available via `GET /documents/{id}` in the following structure for downstream consumption:
+
+```json
+{
+    "document_id": "unique-uuid",
+    "document_name": "report.pdf",
+    "page_number": 3,
+    "content": "Text from this page..."
+}
+```
+
+The `DocumentForRAG` Pydantic model in `document_models.py` provides this contract.
+
+### Testing
+
+Start the backend:
+
+```bash
+cd backend
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+
+Open Swagger UI at `http://127.0.0.1:8000/docs` to test all endpoints interactively.
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `AZURE_STORAGE_CONNECTION_STRING is not set` | Create `.env` from `.env.example` and fill in your Azure values |
+| `Document Intelligence failed, falling back to pypdf` | Check `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` and `KEY` in `.env` |
+| Upload returns 500 | Check Azure Portal → Storage Account → Access keys for correct connection string |
+| PDF text is empty | The PDF may be scanned — Document Intelligence handles OCR automatically |
+
+---
 
 ## Current Limitations
 
