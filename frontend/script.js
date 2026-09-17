@@ -1,237 +1,85 @@
-const documentUpload = document.getElementById("document-upload");
-const uploadStatus = document.getElementById("upload-status");
-
 const API_URL = "http://127.0.0.1:8000";
+let uploadedDocuments = [];
+let selectedDocumentIds = new Set();
+let busy = false;
 
-const messageInput = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const messages = document.getElementById("messages");
-const welcomeScreen = document.getElementById("welcomeScreen");
-const newChatBtn = document.getElementById("newChatBtn");
+const $ = (id) => document.getElementById(id);
+const messages = $("messages");
+const welcomeScreen = $("welcomeScreen");
+const messageInput = $("messageInput");
+const sendBtn = $("sendBtn");
+const uploadInput = $("document-upload");
+const uploadStatus = $("upload-status");
+const progress = $("document-upload-progress");
+const list = $("uploaded-documents-list");
+const count = $("document-count");
+const compareBtn = $("compare-selected-btn");
+const comparisonPanel = $("comparisonPanel");
+const chatArea = $("chatArea");
+const insightsPanel = $("insightsPanel");
 
-let isLoading = false;
-
-
-// Add a message to the chat
-function addMessage(text, role) {
-
-    welcomeScreen.style.display = "none";
-
-    const message = document.createElement("div");
-    message.className = `message ${role}`;
-
-    if (role === "assistant") {
-
-        const avatar = document.createElement("div");
-        avatar.className = "avatar";
-        avatar.textContent = "✦";
-
-        const content = document.createElement("div");
-        content.className = "message-content";
-
-        // textContent keeps the response safe as plain text
-        content.textContent = text;
-
-        message.appendChild(avatar);
-        message.appendChild(content);
-
-    } else {
-
-        const content = document.createElement("div");
-        content.className = "message-content";
-        content.textContent = text;
-
-        message.appendChild(content);
-    }
-
-    messages.appendChild(message);
-
-    message.scrollIntoView({
-        behavior: "smooth",
-        block: "end"
-    });
+function escapeHtml(value) { return String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#039;"}[c])); }
+function setStatus(text, error = false) { if (uploadStatus) { uploadStatus.textContent = text; uploadStatus.classList.toggle("error", error); } }
+function addMessage(text, role = "assistant") {
+  if (!messages) return;
+  welcomeScreen && (welcomeScreen.style.display = "none");
+  messages.style.display = "flex";
+  const el = document.createElement("div"); el.className = `message ${role}`;
+  if (role === "assistant") { const avatar = document.createElement("div"); avatar.className = "avatar"; avatar.textContent = "✦"; el.appendChild(avatar); }
+  const content = document.createElement("div"); content.className = "message-content"; content.textContent = text; el.appendChild(content); messages.appendChild(el); el.scrollIntoView({behavior:"smooth", block:"end"});
 }
-
-
-// Show typing indicator
-function showTyping() {
-
-    const message = document.createElement("div");
-    message.className = "message assistant";
-    message.id = "typingMessage";
-
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.textContent = "✦";
-
-    const content = document.createElement("div");
-    content.className = "message-content typing";
-    content.textContent = "DocTalk is thinking";
-
-    message.appendChild(avatar);
-    message.appendChild(content);
-
-    messages.appendChild(message);
-
-    message.scrollIntoView({
-        behavior: "smooth",
-        block: "end"
-    });
+function showWorkspace(id) {
+  document.querySelectorAll(".sidebar-item[data-target]").forEach(x => x.classList.toggle("active", x.dataset.target === id));
+  if (chatArea) chatArea.style.display = id === "comparisonPanel" ? "none" : "block";
+  if (comparisonPanel) comparisonPanel.classList.toggle("active", id === "comparisonPanel");
+  if (insightsPanel) insightsPanel.classList.toggle("active", id === "insightsPanel");
+  if (welcomeScreen) welcomeScreen.style.display = id === "chatArea" ? "block" : "none";
 }
+document.querySelectorAll(".sidebar-item[data-target]").forEach(x => x.addEventListener("click", () => showWorkspace(x.dataset.target)));
 
-
-// Remove typing indicator
-function hideTyping() {
-
-    const typingMessage = document.getElementById("typingMessage");
-
-    if (typingMessage) {
-        typingMessage.remove();
-    }
+function renderDocuments() {
+  if (!list) return;
+  count.textContent = `${uploadedDocuments.length} document${uploadedDocuments.length === 1 ? "" : "s"} uploaded`;
+  compareBtn.disabled = selectedDocumentIds.size < 2 || selectedDocumentIds.size > 2;
+  list.innerHTML = uploadedDocuments.length ? uploadedDocuments.map(doc => `
+    <article class="uploaded-document-card">
+      <label><input type="checkbox" data-doc-id="${escapeHtml(doc.id)}" ${selectedDocumentIds.has(doc.id) ? "checked" : ""}> <strong>${escapeHtml(doc.filename)}</strong></label>
+      <small>${doc.page_count ? `${doc.page_count} pages` : "Document"} · ${Number(doc.characters || 0).toLocaleString()} characters</small>
+    </article>`).join("") : `<p class="empty-state">Upload PDF, DOCX, or TXT files to see them here.</p>`;
+  list.querySelectorAll("input[data-doc-id]").forEach(box => box.addEventListener("change", () => { box.checked ? selectedDocumentIds.add(box.dataset.docId) : selectedDocumentIds.delete(box.dataset.docId); renderDocuments(); }));
 }
+async function uploadFile(file) {
+  const form = new FormData(); form.append("file", file);
+  const response = await fetch(`${API_URL}/upload`, {method:"POST", body:form});
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || `Upload failed (${response.status})`);
+  return data;
+}
+if (uploadInput) uploadInput.addEventListener("change", async () => {
+  const files = [...uploadInput.files]; if (!files.length) return;
+  setStatus(`Uploading ${files.length} file${files.length > 1 ? "s" : ""}…`); progress.textContent = "";
+  for (let i = 0; i < files.length; i++) { try { const doc = await uploadFile(files[i]); uploadedDocuments.push(doc); progress.textContent = `Uploaded ${i + 1} of ${files.length}: ${files[i].name}`; } catch (e) { progress.textContent = `Could not upload ${files[i].name}: ${e.message}`; } }
+  renderDocuments(); setStatus("Upload complete."); uploadInput.value = "";
+});
 
-
-// Send message to backend
 async function sendMessage() {
-
-    const message = messageInput.value.trim();
-
-    if (!message || isLoading) {
-        return;
-    }
-
-    isLoading = true;
-    sendBtn.disabled = true;
-
-    addMessage(message, "user");
-
-    messageInput.value = "";
-    messageInput.style.height = "auto";
-
-    showTyping();
-
-    try {
-
-        const url = `${API_URL}/chat?message=${encodeURIComponent(message)}`;
-
-        const response = await fetch(url, {
-            method: "POST"
-        });
-
-        if (!response.ok) {
-            throw new Error(`Backend returned ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        hideTyping();
-
-        addMessage(
-            data.response || "The agent returned an empty response.",
-            "assistant"
-        );
-
-    } catch (error) {
-
-        hideTyping();
-
-        addMessage(
-            "I couldn't connect to the DocTalk backend. Make sure your FastAPI server is running.",
-            "assistant"
-        );
-
-        console.error("DocTalk error:", error);
-
-    } finally {
-
-        isLoading = false;
-        sendBtn.disabled = false;
-        messageInput.focus();
-    }
+  const message = messageInput?.value.trim(); if (!message || busy) return;
+  busy = true; sendBtn && (sendBtn.disabled = true); addMessage(message, "user"); messageInput.value = "";
+  const typing = document.createElement("div"); typing.className = "message assistant"; typing.id = "typingMessage"; typing.textContent = "DocTalk is thinking…"; messages.appendChild(typing);
+  try { const r = await fetch(`${API_URL}/chat`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({message})}); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.detail || `Request failed (${r.status})`); addMessage(d.response || "No response returned."); }
+  catch (e) { addMessage(`Sorry, the request failed: ${e.message}. The backend/Azure connection may need attention.`); console.error(e); }
+  finally { $("typingMessage")?.remove(); busy = false; sendBtn && (sendBtn.disabled = false); messageInput?.focus(); }
 }
-
-
-// Send with button
-sendBtn.addEventListener("click", sendMessage);
-
-
-// Send with Enter, Shift + Enter for new line
-messageInput.addEventListener("keydown", function(event) {
-
-    if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
-    }
+sendBtn?.addEventListener("click", sendMessage); messageInput?.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+document.querySelectorAll(".suggestion-card").forEach(x => x.addEventListener("click", () => { messageInput.value = x.dataset.prompt || x.textContent.trim(); sendMessage(); }));
+$("newChatBtn")?.addEventListener("click", () => { messages.innerHTML = ""; welcomeScreen.style.display = "block"; showWorkspace("chatArea"); messageInput.focus(); });
+compareBtn?.addEventListener("click", async () => {
+  if (selectedDocumentIds.size !== 2 || busy) return;
+  busy = true; compareBtn.disabled = true; showWorkspace("comparisonPanel");
+  const selected = uploadedDocuments.filter(d => selectedDocumentIds.has(d.id));
+  const result = comparisonPanel.querySelector(".comparison-result") || document.createElement("div"); result.className = "comparison-result"; result.textContent = "Comparing documents…"; comparisonPanel.appendChild(result);
+  try { const r = await fetch(`${API_URL}/compare`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({documents:selected.map(d => ({id:d.id, filename:d.filename}))})}); const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.detail || `Comparison failed (${r.status})`); result.textContent = d.response || d.comparison || JSON.stringify(d, null, 2); }
+  catch(e) { result.textContent = `Comparison failed: ${e.message}`; }
+  finally { busy = false; renderDocuments(); }
 });
-
-
-// Auto-grow textarea
-messageInput.addEventListener("input", function() {
-
-    this.style.height = "auto";
-    this.style.height = Math.min(this.scrollHeight, 140) + "px";
-});
-
-
-// Quick suggestion cards
-document.querySelectorAll(".suggestion-card").forEach(card => {
-
-    card.addEventListener("click", function() {
-
-        messageInput.value = this.dataset.prompt;
-        sendMessage();
-
-    });
-
-});
-
-
-// New conversation
-newChatBtn.addEventListener("click", function() {
-
-    messages.innerHTML = "";
-    welcomeScreen.style.display = "block";
-    messageInput.value = "";
-    messageInput.focus();
-
-});
-
-if (documentUpload) {
-    documentUpload.addEventListener("change", async function () {
-        const file = documentUpload.files[0];
-
-        if (!file) {
-            return;
-        }
-
-        uploadStatus.textContent = "Uploading document...";
-        uploadStatus.style.color = "#f5c76b";
-
-        const formData = new FormData();
-        formData.append("file", file);
-
-        try {
-            const response = await fetch(`${API_URL}/upload`, {
-                method: "POST",
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.detail || "Upload failed.");
-            }
-
-            uploadStatus.textContent =
-                `Uploaded: ${data.filename}`;
-
-            uploadStatus.style.color = "#43d9ad";
-
-        } catch (error) {
-            uploadStatus.textContent =
-                `Upload failed: ${error.message}`;
-
-            uploadStatus.style.color = "#ff7b8a";
-        }
-    });
-}
+renderDocuments();
