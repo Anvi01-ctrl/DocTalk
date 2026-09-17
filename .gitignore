@@ -16,7 +16,6 @@ uploads/
 documents/
 *.pdf
 *.docx
-*.txt
 
 # Logs
 *.log
