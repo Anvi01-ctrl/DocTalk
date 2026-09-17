@@ -160,7 +160,7 @@ http://127.0.0.1:5500
 5. Ask a question about the document.
 6. Read the AI-generated response.
 
-## Backend API Endpoints
+## Backend API Endpoints (Core AI)
 
 ### Check server status
 
@@ -174,17 +174,11 @@ GET /
 GET /document
 ```
 
-### Upload a document
+### Upload a document (Legacy - single file)
 
 ```http
 POST /upload
 ```
-
-Supported file types:
-
-- PDF
-- DOCX
-- TXT
 
 ### Ask a question
 
@@ -192,19 +186,45 @@ Supported file types:
 POST /chat?message=YOUR_QUESTION
 ```
 
+## Backend API Endpoints (Document Ingestion & Storage)
+
+### Upload Documents (Multi-file)
+Uploads files to Azure Blob Storage and extracts text using Azure AI Document Intelligence.
+
+```http
+POST /documents/upload
+```
+
+### List all documents
+Returns metadata for all documents stored persistently.
+
+```http
+GET /documents
+```
+
+### Get Document Details
+Returns full extracted text and page info for a specific document.
+
+```http
+GET /documents/{document_id}
+```
+
+### Delete Document
+Deletes a document from Azure Blob Storage and the metadata store.
+
+```http
+DELETE /documents/{document_id}
+```
+
 ## Current Limitations
 
-- The uploaded document is stored temporarily in backend memory.
-- Restarting the backend clears the uploaded document.
 - Large documents may exceed the model context limit.
 - The current version does not yet use a vector database or retrieval-augmented generation.
 - Each team member needs access to the Azure AI Foundry project.
 
 ## Future Improvements
 
-- Persistent document storage
-- Multiple document support
-- Vector database integration
+- Vector database integration (Azure AI Search)
 - Retrieval-augmented generation
 - Better chunking for large documents
 - User authentication

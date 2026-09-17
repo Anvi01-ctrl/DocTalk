@@ -9,8 +9,17 @@ from docx import Document
 
 import io
 
+from dotenv import load_dotenv
+load_dotenv()
+
+from app.document_routes import router as document_router
+
 
 app = FastAPI(title="DocTalk API")
+
+# Include document ingestion routes (Team Member 1)
+app.include_router(document_router)
+
 
 
 # Allow the frontend to call this backend.
