@@ -1,4 +1,30 @@
-.env
-venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Uploaded files
+uploads/
+documents/
+*.pdf
+*.docx
+*.txt
+
+# Logs
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
