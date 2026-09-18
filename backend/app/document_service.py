@@ -66,10 +66,13 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
     """
     Extract text from a PDF using Azure AI Document Intelligence.
 
-    Uses the prebuilt-read model for:
+    Uses the prebuilt-layout model for:
     - Text extraction from normal PDFs
     - OCR for scanned documents
     - Page-aware extraction
+    - Table extraction
+    - Heading/section detection
+    - Layout-aware processing
 
     Returns (pages, page_count).
     """
@@ -80,13 +83,41 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
 
     try:
         poller = client.begin_analyze_document(
-            model_id="prebuilt-read",
-            analyze_request=AnalyzeDocumentRequest(
+            model_id="prebuilt-layout",
+            body=AnalyzeDocumentRequest(
                 bytes_source=file_bytes,
             ),
         )
 
         result = poller.result()
+
+        # Build a set of table spans so we can mark table content
+        table_texts_by_page = {}
+        if result.tables:
+            for table in result.tables:
+                # Build a simple text representation of the table
+                rows = {}
+                for cell in table.cells:
+                    row_idx = cell.row_index
+                    if row_idx not in rows:
+                        rows[row_idx] = {}
+                    rows[row_idx][cell.column_index] = cell.content
+
+                table_text = ""
+                for row_idx in sorted(rows.keys()):
+                    row_cells = rows[row_idx]
+                    row_text = " | ".join(
+                        row_cells.get(col, "") for col in sorted(row_cells.keys())
+                    )
+                    table_text += row_text + "\n"
+
+                # Associate table with its bounding page
+                if table.bounding_regions:
+                    for region in table.bounding_regions:
+                        pg = region.page_number
+                        if pg not in table_texts_by_page:
+                            table_texts_by_page[pg] = []
+                        table_texts_by_page[pg].append(table_text.strip())
 
         pages = []
 
@@ -101,6 +132,11 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
                         line.content for line in page.lines
                     )
 
+                # Append table content for this page
+                if page_number in table_texts_by_page:
+                    for tbl in table_texts_by_page[page_number]:
+                        page_text += "\n\n[Table]\n" + tbl
+
                 pages.append(PageInfo(
                     page_number=page_number,
                     text=page_text,
@@ -109,7 +145,7 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
         page_count = len(pages)
 
         logger.info(
-            f"Document Intelligence extracted {page_count} pages"
+            f"Document Intelligence (layout) extracted {page_count} pages"
         )
 
         return pages, page_count
