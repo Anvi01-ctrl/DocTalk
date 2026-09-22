@@ -184,12 +184,12 @@ async def process_pdf_with_pypdf(file_bytes: bytes) -> tuple[list[PageInfo], int
     return pages, page_count
 
 
-async def process_docx(file_bytes: bytes) -> tuple[Optional[list[PageInfo]], Optional[int]]:
+async def process_docx(file_bytes: bytes) -> tuple[list[PageInfo], int]:
     """
     Extract text from a DOCX file using python-docx.
 
-    DOCX files do not have true page numbers, so pages is None
-    and page_count is None.
+    DOCX files do not have true page numbers, so the entire
+    document is treated as page 1 for RAG compatibility.
     """
     docx_file = io.BytesIO(file_bytes)
     document = DocxDocument(docx_file)
@@ -200,19 +200,26 @@ async def process_docx(file_bytes: bytes) -> tuple[Optional[list[PageInfo]], Opt
         if paragraph.text.strip():
             paragraphs.append(paragraph.text)
 
-    # No true pages in DOCX — return None for pages/page_count
-    return None, None
+    full_text = "\n".join(paragraphs)
+
+    # Treat entire DOCX as one page for downstream chunking
+    pages = [PageInfo(page_number=1, text=full_text)] if full_text.strip() else []
+
+    return pages, len(pages)
 
 
-async def process_txt(file_bytes: bytes) -> tuple[Optional[list[PageInfo]], Optional[int]]:
+async def process_txt(file_bytes: bytes) -> tuple[list[PageInfo], int]:
     """
     Extract text from a TXT file.
 
-    TXT files do not have pages, so pages is None
-    and page_count is None.
+    TXT files do not have pages, so the entire file is
+    treated as page 1 for RAG compatibility.
     """
-    # No true pages in TXT — return None for pages/page_count
-    return None, None
+    full_text = file_bytes.decode("utf-8", errors="ignore")
+
+    pages = [PageInfo(page_number=1, text=full_text)] if full_text.strip() else []
+
+    return pages, len(pages)
 
 
 async def extract_text(
@@ -224,8 +231,8 @@ async def extract_text(
 
     Returns a dict with:
     - text: the full extracted text
-    - pages: list of PageInfo or None
-    - page_count: int or None
+    - pages: list of PageInfo (always non-None for RAG compatibility)
+    - page_count: int
     """
     if extension == "pdf":
         pages, page_count = await process_pdf_with_intelligence(file_bytes)
@@ -243,12 +250,8 @@ async def extract_text(
     elif extension == "docx":
         pages, page_count = await process_docx(file_bytes)
 
-        # Extract all paragraph text
-        docx_file = io.BytesIO(file_bytes)
-        document = DocxDocument(docx_file)
-
         full_text = "\n".join(
-            p.text for p in document.paragraphs if p.text.strip()
+            page.text for page in pages if page.text
         )
 
         return {
@@ -260,7 +263,9 @@ async def extract_text(
     elif extension == "txt":
         pages, page_count = await process_txt(file_bytes)
 
-        full_text = file_bytes.decode("utf-8", errors="ignore")
+        full_text = "\n".join(
+            page.text for page in pages if page.text
+        )
 
         return {
             "text": full_text,

@@ -22,6 +22,7 @@ class DocumentMetadata(BaseModel):
     """Full document metadata including extracted content."""
     document_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     filename: str
+    file_type: Optional[str] = None  # pdf, docx, txt
     content_type: str
     blob_path: str
     status: str = "processing"  # processing, processed, failed
@@ -36,6 +37,7 @@ class DocumentSummary(BaseModel):
     """Lightweight document info for list responses (no full text)."""
     document_id: str
     filename: str
+    file_type: Optional[str] = None
     content_type: str
     status: str
     page_count: Optional[int] = None

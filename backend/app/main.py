@@ -393,16 +393,34 @@ async def upload_document(file: UploadFile = File(...)):
             for i, p in enumerate(document_pages)
         ]
 
+        # -------------------------------------------------
+        # Upload to Azure Blob Storage for persistence
+        # -------------------------------------------------
+        try:
+            from app import storage_service
+            blob_path = await storage_service.upload_blob(
+                document_id=document_id,
+                filename=filename,
+                file_bytes=file_bytes,
+            )
+        except Exception as blob_err:
+            logger.warning(
+                f"Blob upload failed for {filename}: {blob_err}. "
+                f"Using local path as fallback."
+            )
+            blob_path = f"local/{document_id}/{filename}"
+
         doc_meta = DocumentMetadata(
             document_id=document_id,
             filename=filename,
+            file_type=extension,
             content_type=(
                 "application/pdf" if extension == "pdf"
                 else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 if extension == "docx"
                 else "text/plain"
             ),
-            blob_path=f"local/{document_id}/{filename}",
+            blob_path=blob_path,
             status="processed",
             page_count=len(document_pages),
             character_count=len(text),

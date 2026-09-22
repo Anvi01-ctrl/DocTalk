@@ -15,6 +15,7 @@ env/
 uploads/
 documents/
 documents_metadata.json
+chats_metadata.json
 *.pdf
 *.docx
 

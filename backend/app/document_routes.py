@@ -123,6 +123,7 @@ async def upload_documents(files: list[UploadFile] = File(...)):
                 doc = DocumentMetadata(
                     document_id=document_id,
                     filename=filename,
+                    file_type=extension,
                     content_type=content_type,
                     blob_path=blob_path,
                     status="failed",
@@ -146,6 +147,7 @@ async def upload_documents(files: list[UploadFile] = File(...)):
             doc = DocumentMetadata(
                 document_id=document_id,
                 filename=filename,
+                file_type=extension,
                 content_type=content_type,
                 blob_path=blob_path,
                 status="processed",
@@ -228,6 +230,7 @@ async def list_documents():
         DocumentSummary(
             document_id=doc.document_id,
             filename=doc.filename,
+            file_type=doc.file_type,
             content_type=doc.content_type,
             status=doc.status,
             page_count=doc.page_count,

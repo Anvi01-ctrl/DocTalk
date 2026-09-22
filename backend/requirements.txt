@@ -3,6 +3,9 @@ uvicorn
 python-multipart
 azure-identity
 azure-ai-projects
+azure-storage-blob
+azure-ai-documentintelligence
+azure-search-documents
 pypdf
 python-docx
-azure-search-documents
+python-dotenv
