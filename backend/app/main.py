@@ -285,72 +285,36 @@ async def upload_document(file: UploadFile = File(...)):
 
     file_bytes = await file.read()
 
+    if not file_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded file is empty."
+        )
+
     # Generate a unique document ID for session tracking.
-    # This ID is used by the frontend to tell the /chat endpoint
-    # which documents belong to the current session.
     document_id = str(uuid.uuid4())
 
     try:
 
         # -------------------------------------------------
-        # TXT
+        # Extract text using document_service
+        # (uses Document Intelligence for PDFs with OCR,
+        # tables, layout — falls back to pypdf)
         # -------------------------------------------------
 
-        if extension == "txt":
+        from app import document_service
+        from app.document_models import DocumentMetadata, PageInfo
+        from app import metadata_store
+        from app import storage_service
 
-            text = file_bytes.decode(
-                "utf-8",
-                errors="ignore"
-            )
+        extraction = await document_service.extract_text(
+            file_bytes=file_bytes,
+            extension=extension,
+        )
 
-            # TXT is treated as one page.
-            document_pages = [text]
-
-
-        # -------------------------------------------------
-        # PDF
-        # -------------------------------------------------
-
-        elif extension == "pdf":
-
-            pdf_file = io.BytesIO(file_bytes)
-
-            reader = PdfReader(pdf_file)
-
-            document_pages = []
-
-            # Keep every PDF page separately.
-            for page in reader.pages:
-
-                page_text = page.extract_text() or ""
-
-                document_pages.append(page_text)
-
-            # Keep combined text for compatibility
-            # with the existing backend.
-            text = "\n\n".join(document_pages)
-
-
-        # -------------------------------------------------
-        # DOCX
-        # -------------------------------------------------
-
-        else:
-
-            docx_file = io.BytesIO(file_bytes)
-
-            document = Document(docx_file)
-
-            paragraphs = []
-
-            for paragraph in document.paragraphs:
-
-                paragraphs.append(paragraph.text)
-
-            text = "\n".join(paragraphs)
-
-            # DOCX is currently treated as one page.
-            document_pages = [text]
+        text = extraction["text"]
+        pages = extraction["pages"]      # list[PageInfo]
+        page_count = extraction["page_count"]
 
 
         # -------------------------------------------------
@@ -370,7 +334,12 @@ async def upload_document(file: UploadFile = File(...)):
 
         # -------------------------------------------------
         # Store uploaded document in legacy global state
+        #
+        # NOTE: Preserved for backward compatibility with
+        # the legacy /document GET endpoint.
         # -------------------------------------------------
+
+        document_pages = [p.text for p in pages] if pages else [text]
 
         current_document["filename"] = filename
 
@@ -380,24 +349,9 @@ async def upload_document(file: UploadFile = File(...)):
 
 
         # -------------------------------------------------
-        # Also store in metadata_store for the document
-        # library ("My Documents") and session-scoped
-        # retrieval via the /chat endpoint.
-        # -------------------------------------------------
-
-        from app.document_models import DocumentMetadata, PageInfo
-        from app import metadata_store
-
-        pages_info = [
-            PageInfo(page_number=i + 1, text=p)
-            for i, p in enumerate(document_pages)
-        ]
-
-        # -------------------------------------------------
         # Upload to Azure Blob Storage for persistence
         # -------------------------------------------------
         try:
-            from app import storage_service
             blob_path = await storage_service.upload_blob(
                 document_id=document_id,
                 filename=filename,
@@ -410,21 +364,28 @@ async def upload_document(file: UploadFile = File(...)):
             )
             blob_path = f"local/{document_id}/{filename}"
 
+
+        # -------------------------------------------------
+        # Save metadata for persistent document library
+        # -------------------------------------------------
+
+        content_type = (
+            "application/pdf" if extension == "pdf"
+            else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            if extension == "docx"
+            else "text/plain"
+        )
+
         doc_meta = DocumentMetadata(
             document_id=document_id,
             filename=filename,
             file_type=extension,
-            content_type=(
-                "application/pdf" if extension == "pdf"
-                else "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                if extension == "docx"
-                else "text/plain"
-            ),
+            content_type=content_type,
             blob_path=blob_path,
             status="processed",
-            page_count=len(document_pages),
+            page_count=page_count,
             character_count=len(text),
-            pages=pages_info,
+            pages=pages,
         )
 
         metadata_store.save_document(doc_meta)
@@ -439,14 +400,22 @@ async def upload_document(file: UploadFile = File(...)):
         # -------------------------------------------------
         try:
             all_chunks = []
-            for i, page_text in enumerate(document_pages):
-                page_chunks = chunk_text(
-                    text=page_text,
+            if pages:
+                for page_info in pages:
+                    page_chunks = chunk_text(
+                        text=page_info.text,
+                        document_id=document_id,
+                        document_name=filename,
+                        page_number=page_info.page_number,
+                    )
+                    all_chunks.extend(page_chunks)
+            else:
+                all_chunks = chunk_text(
+                    text=text,
                     document_id=document_id,
                     document_name=filename,
-                    page_number=i + 1,
+                    page_number=1,
                 )
-                all_chunks.extend(page_chunks)
 
             if all_chunks:
                 index_result = index_chunks(all_chunks)
@@ -462,8 +431,7 @@ async def upload_document(file: UploadFile = File(...)):
 
 
         # -------------------------------------------------
-        # Upload response — includes document_id so the
-        # frontend can track session documents.
+        # Upload response
         # -------------------------------------------------
 
         return {
@@ -471,7 +439,7 @@ async def upload_document(file: UploadFile = File(...)):
             "document_id": document_id,
             "filename": filename,
             "characters": len(text),
-            "pages": len(document_pages),
+            "pages": page_count or len(document_pages),
         }
 
 
