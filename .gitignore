@@ -18,8 +18,12 @@ documents_metadata.json
 *.pdf
 *.docx
 
+# Build artifacts / deploy zips
+*.zip
+
 # Logs
 *.log
+deploy.log
 
 # Operating system files
 .DS_Store
