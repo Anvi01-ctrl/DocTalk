@@ -1,17 +1,8 @@
-"""
-DocTalk — Document metadata store.
-
-Lightweight JSON file-based storage for document metadata.
-Persists across server restarts without requiring a database.
-
-Design: The metadata is behind a clean interface, so swapping
-to a database later only requires changing this module.
-"""
-
 import json
 import os
 import logging
 from typing import Optional
+from datetime import datetime, timedelta
 
 from app.document_models import DocumentMetadata
 
@@ -96,3 +87,29 @@ def delete_document(document_id: str) -> bool:
 
     logger.info(f"Deleted metadata for document: {document_id}")
     return True
+
+
+def get_expired_documents(days: int = 30) -> list[DocumentMetadata]:
+    """
+    Retrieve all documents whose uploaded_at timestamp
+    is older than the specified number of days.
+
+    Used by the 30-day retention policy to find documents
+    that should be automatically cleaned up.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    metadata = _load_metadata()
+    expired = []
+
+    for doc_data in metadata.values():
+        uploaded_at = doc_data.get("uploaded_at", "")
+        if uploaded_at:
+            try:
+                upload_date = datetime.fromisoformat(uploaded_at)
+                if upload_date < cutoff:
+                    expired.append(DocumentMetadata(**doc_data))
+            except (ValueError, TypeError):
+                # If timestamp is unparseable, skip it
+                continue
+
+    return expired
