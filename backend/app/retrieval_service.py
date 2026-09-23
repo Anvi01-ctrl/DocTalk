@@ -1,76 +1,33 @@
-import os
-
-from azure.core.credentials import AzureKeyCredential
-from azure.search.documents import SearchClient
-from azure.search.documents.models import VectorizedQuery
-
+from typing import Optional
 from app.embedding_service import generate_embedding
-
-
-SEARCH_ENDPOINT = os.getenv(
-    "AZURE_SEARCH_ENDPOINT",
-    "https://doctalk-search.search.windows.net",
-)
-
-SEARCH_API_KEY = os.getenv("AZURE_SEARCH_API_KEY")
-
-INDEX_NAME = os.getenv(
-    "AZURE_SEARCH_INDEX_NAME",
-    "doctalk-documents",
-)
-
-
-def get_search_client() -> SearchClient:
-    """Create an Azure AI Search client."""
-
-    if not SEARCH_API_KEY:
-        raise RuntimeError(
-            "AZURE_SEARCH_API_KEY environment variable is not set."
-        )
-
-    return SearchClient(
-        endpoint=SEARCH_ENDPOINT,
-        index_name=INDEX_NAME,
-        credential=AzureKeyCredential(SEARCH_API_KEY),
-    )
-
+from app.search_service import hybrid_search
 
 def search_documents(
     query: str,
     top_k: int = 5,
+    document_ids: Optional[list[str]] = None,
 ) -> list[dict]:
     """
     Run hybrid search using keyword + vector search.
+
+    SESSION-SCOPE FILTERING:
+        When document_ids is provided, an OData filter restricts
+        Azure AI Search to ONLY return chunks belonging to those
+        document IDs.
     """
 
     if not query.strip():
         raise ValueError("Search query cannot be empty.")
 
-    search_client = get_search_client()
-
     # Generate an embedding for the user's question.
     query_vector = generate_embedding(query)
 
-    # Search the content_vector field.
-    vector_query = VectorizedQuery(
-        vector=query_vector,
-        k_nearest_neighbors=top_k,
-        fields="content_vector",
-        exhaustive=True,
-    )
-
-    # Hybrid search: keyword + vector search.
-    results = search_client.search(
-        search_text=query,
-        vector_queries=[vector_query],
-        select=[
-            "chunk_id",
-            "document_id",
-            "document_name",
-            "page_number",
-            "content",
-        ],
+    # Hybrid search: keyword + vector search via search_service
+    results = hybrid_search(
+        query=query,
+        query_vector=query_vector,
         top=top_k,
+        document_ids=document_ids
     )
 
     retrieved_chunks = []
@@ -83,7 +40,7 @@ def search_documents(
                 "document_name": result["document_name"],
                 "page_number": result["page_number"],
                 "content": result["content"],
-                "score": result["@search.score"],
+                "score": result.get("@search.score", 0),
             }
         )
 

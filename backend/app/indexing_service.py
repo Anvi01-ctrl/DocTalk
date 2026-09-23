@@ -1,38 +1,9 @@
 import os
 
-from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchClient
 
 from app.embedding_service import generate_embedding
-
-
-SEARCH_ENDPOINT = os.getenv(
-    "AZURE_SEARCH_ENDPOINT",
-    "https://doctalk-search.search.windows.net",
-)
-
-SEARCH_API_KEY = os.getenv("AZURE_SEARCH_API_KEY")
-
-INDEX_NAME = os.getenv(
-    "AZURE_SEARCH_INDEX_NAME",
-    "doctalk-documents",
-)
-
-
-def get_search_client() -> SearchClient:
-    """Create an Azure AI Search client."""
-
-    if not SEARCH_API_KEY:
-        raise RuntimeError(
-            "AZURE_SEARCH_API_KEY environment variable is not set."
-        )
-
-    return SearchClient(
-        endpoint=SEARCH_ENDPOINT,
-        index_name=INDEX_NAME,
-        credential=AzureKeyCredential(SEARCH_API_KEY),
-    )
-
+from app.search_service import get_search_client
 
 def index_chunks(chunks: list[dict]) -> dict:
     """

@@ -2,24 +2,31 @@ from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import OpenAI
 
 
-FOUNDRY_ACCOUNT = "doctalk-korea-ai"
+FOUNDRY_ACCOUNT = "doctalk-korea"
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSIONS = 1536
 
 
-token_provider = get_bearer_token_provider(
-    DefaultAzureCredential(),
-    "https://cognitiveservices.azure.com/.default",
-)
+# Deferred instantiation to prevent import-time crashes
+_token_provider = None
+_openai_client = None
 
-openai_client = OpenAI(
-    base_url=f"https://{FOUNDRY_ACCOUNT}.services.ai.azure.com/openai/v1",
-    api_key="placeholder",
-    default_headers={
-        "Authorization": f"Bearer {token_provider()}"
-    },
-)
+def get_openai_client():
+    global _token_provider, _openai_client
+    if _openai_client is None:
+        _token_provider = get_bearer_token_provider(
+            DefaultAzureCredential(),
+            "https://cognitiveservices.azure.com/.default",
+        )
+        _openai_client = OpenAI(
+            base_url=f"https://{FOUNDRY_ACCOUNT}.services.ai.azure.com/openai/v1",
+            api_key="placeholder",
+            default_headers={
+                "Authorization": f"Bearer {_token_provider()}"
+            },
+        )
+    return _openai_client
 
 
 def generate_embedding(text: str) -> list[float]:
@@ -30,9 +37,10 @@ def generate_embedding(text: str) -> list[float]:
     if not text.strip():
         raise ValueError("Text cannot be empty.")
 
-    response = openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
+    response = get_openai_client().embeddings.create(
         input=text,
+        model=EMBEDDING_MODEL,
+        dimensions=EMBEDDING_DIMENSIONS,
     )
 
     embedding = response.data[0].embedding

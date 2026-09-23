@@ -1,37 +1,19 @@
 from app.retrieval_service import search_documents
-from app.embedding_service import generate_embedding
+from app.chat_service import generate_chat_completion
 
-import os
-
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from openai import OpenAI
-
-
-FOUNDRY_ACCOUNT = "doctalk-korea-ai"
-
-CHAT_MODEL = "gpt-5-mini"
-
-token_provider = get_bearer_token_provider(
-    DefaultAzureCredential(),
-    "https://cognitiveservices.azure.com/.default",
-)
-
-openai_client = OpenAI(
-    base_url=f"https://{FOUNDRY_ACCOUNT}.services.ai.azure.com/openai/v1",
-    api_key="placeholder",
-    default_headers={
-        "Authorization": f"Bearer {token_provider()}"
-    },
-)
-
+from typing import Optional
 
 def generate_rag_answer(
     question: str,
     top_k: int = 5,
+    document_ids: Optional[list[str]] = None,
 ) -> dict:
     """
     Retrieve relevant document chunks and generate an
     answer using GPT-5-mini.
+
+    When document_ids is provided, retrieval is restricted
+    to only those documents (session-scoped filtering).
     """
 
     if not question.strip():
@@ -41,6 +23,7 @@ def generate_rag_answer(
     retrieved_chunks = search_documents(
         question,
         top_k=top_k,
+        document_ids=document_ids,
     )
 
     # If nothing relevant was retrieved, don't ask the model
@@ -91,17 +74,7 @@ User question:
 {question}
 """
 
-    response = openai_client.chat.completions.create(
-        model=CHAT_MODEL,
-        messages=[
-            {
-                "role": "user",
-                "content": prompt,
-            }
-        ],
-    )
-
-    answer = response.choices[0].message.content
+    answer = generate_chat_completion(prompt)
 
     sources = [
         {
