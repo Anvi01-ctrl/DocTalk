@@ -165,5 +165,151 @@
         "timestamp": "2026-09-22T21:35:55.626309"
       }
     ]
+  },
+  "68e05c4c-f590-4c67-9410-2d82055f4374": {
+    "conversation_id": "68e05c4c-f590-4c67-9410-2d82055f4374",
+    "title": "What is edge computing?",
+    "created_at": "2026-09-23T00:04:08.133688",
+    "updated_at": "2026-09-23T00:04:08.133688",
+    "document_ids": [
+      "dbc8bbb8-1569-495d-a456-e557f07832a9"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is edge computing?",
+        "timestamp": "2026-09-23T00:04:08.133688"
+      },
+      {
+        "role": "assistant",
+        "content": "Edge computing is a distributed computing paradigm that brings computation and data storage closer to the sources of data. This can improve response times and save bandwidth. It is used in IoT, autonomous vehicles, and smart cities, and reduces latency by processing data at the edge of the network rather than in a centralized data center.",
+        "timestamp": "2026-09-23T00:04:14.511631"
+      }
+    ]
+  },
+  "a193a6ce-eab1-4ba6-b298-d06a6f0b5ed3": {
+    "conversation_id": "a193a6ce-eab1-4ba6-b298-d06a6f0b5ed3",
+    "title": "Compare edge computing and machine learn...",
+    "created_at": "2026-09-23T00:04:14.517070",
+    "updated_at": "2026-09-23T00:04:14.517070",
+    "document_ids": [
+      "dbc8bbb8-1569-495d-a456-e557f07832a9",
+      "c10ddcff-7fc7-430d-8413-e71952be0a11"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Compare edge computing and machine learning.",
+        "timestamp": "2026-09-23T00:04:14.517070"
+      },
+      {
+        "role": "assistant",
+        "content": "Here are the main differences based on the provided documents:\n\n- Core focus\n  - Edge computing: a distributed computing paradigm that brings computation and data storage closer to data sources.\n  - Machine learning: a subset of artificial intelligence that gives systems the ability to automatically learn and improve from experience.\n\n- Purpose / benefit\n  - Edge computing: improves response times and saves bandwidth; reduces latency by processing data at the edge rather than in a centralized data center.\n  - Machine learning: enables systems to learn from data (no additional benefits described in the documents).\n\n- Technologies / concepts\n  - Edge computing: described as an architectural/location approach for where computation and storage occur.\n  - Machine learning: includes neural networks (inspired by biological neural networks) and deep learning (uses multiple neural-network layers to extract higher-level features from raw input).\n\n- Example application domains (from the documents)\n  - Edge computing: IoT, autonomous vehicles, and smart cities.\n  - Machine learning: specific application domains are not listed in the provided documents.\n\nI could not find more information linking the two (e.g., how they are combined or used together) in the uploaded documents.",
+        "timestamp": "2026-09-23T00:04:24.248725"
+      }
+    ]
+  },
+  "45faaf18-04e7-48bc-a7eb-b0879735e8c9": {
+    "conversation_id": "45faaf18-04e7-48bc-a7eb-b0879735e8c9",
+    "title": "What is the capital of France?",
+    "created_at": "2026-09-23T00:04:24.251345",
+    "updated_at": "2026-09-23T00:04:24.251345",
+    "document_ids": [
+      "dbc8bbb8-1569-495d-a456-e557f07832a9"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is the capital of France?",
+        "timestamp": "2026-09-23T00:04:24.251345"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-23T00:04:30.038719"
+      }
+    ]
+  },
+  "46c1ff38-afc8-4f8d-9421-8acba7d75286": {
+    "conversation_id": "46c1ff38-afc8-4f8d-9421-8acba7d75286",
+    "title": "Hello",
+    "created_at": "2026-09-23T00:04:30.042430",
+    "updated_at": "2026-09-23T00:04:30.042430",
+    "document_ids": [],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Hello",
+        "timestamp": "2026-09-23T00:04:30.042430"
+      },
+      {
+        "role": "assistant",
+        "content": "Hello — I'm DocTalk. I can help analyze the documents you've uploaded. What would you like me to do?\n\nExamples:\n- Summarize one or all documents\n- Find specific clauses, dates, names, or figures\n- Answer questions based on the documents\n- Extract key data into a table or checklist\n- Compare two documents or versions\n\nTell me which document or what question to search for (or paste a short query) and I’ll start.",
+        "timestamp": "2026-09-23T00:04:39.508672"
+      }
+    ]
+  },
+  "d66b480a-99b7-43d5-a511-7ac5f0efd6a7": {
+    "conversation_id": "d66b480a-99b7-43d5-a511-7ac5f0efd6a7",
+    "title": "What is neural networks?",
+    "created_at": "2026-09-23T00:04:39.511776",
+    "updated_at": "2026-09-23T00:04:39.511776",
+    "document_ids": [
+      "c10ddcff-7fc7-430d-8413-e71952be0a11"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is neural networks?",
+        "timestamp": "2026-09-23T00:04:39.511776"
+      },
+      {
+        "role": "assistant",
+        "content": "Neural networks are computing systems inspired by biological neural networks.",
+        "timestamp": "2026-09-23T00:04:45.931474"
+      }
+    ]
+  },
+  "b34ff1f1-1d3e-41a6-8676-3128ac598f21": {
+    "conversation_id": "b34ff1f1-1d3e-41a6-8676-3128ac598f21",
+    "title": "What is edge computing used for?",
+    "created_at": "2026-09-23T00:04:46.424003",
+    "updated_at": "2026-09-23T00:04:46.424003",
+    "document_ids": [
+      "dbc8bbb8-1569-495d-a456-e557f07832a9"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is edge computing used for?",
+        "timestamp": "2026-09-23T00:04:46.424003"
+      },
+      {
+        "role": "assistant",
+        "content": "According to the document, edge computing is used in IoT, autonomous vehicles, and smart cities. It brings computation and storage closer to data sources to improve response times, reduce latency, and save bandwidth by processing data at the network edge rather than in a centralized data center.",
+        "timestamp": "2026-09-23T00:04:51.390579"
+      }
+    ]
+  },
+  "ffa55d7c-dc17-43bc-a699-28743e43d3b2": {
+    "conversation_id": "ffa55d7c-dc17-43bc-a699-28743e43d3b2",
+    "title": "What is neural networks?",
+    "created_at": "2026-09-23T00:04:55.869917",
+    "updated_at": "2026-09-23T00:04:55.869917",
+    "document_ids": [
+      "c10ddcff-7fc7-430d-8413-e71952be0a11"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "What is neural networks?",
+        "timestamp": "2026-09-23T00:04:55.869917"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-23T00:04:58.639244"
+      }
+    ]
   }
 }
