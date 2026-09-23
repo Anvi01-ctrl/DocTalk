@@ -215,13 +215,17 @@ function showWorkspace(id) {
         }
     }
 
+    // Hide chat input on non-chat panels
+    var inputSection = document.querySelector(".input-section");
+    if (inputSection) {
+        inputSection.style.display = hidePanels.indexOf(id) !== -1 ? "none" : "";
+    }
+
     if (comparisonPanel) {
-        comparisonPanel.style.display = id === "comparisonPanel" ? "flex" : "none";
+        comparisonPanel.style.display = id === "comparisonPanel" ? "block" : "none";
         comparisonPanel.classList.toggle("active", id === "comparisonPanel");
-        if (id === "comparisonPanel" && messages) {
-            comparisonPanel.appendChild(messages);
-            var resultArea = document.getElementById("comparison-result-area");
-            if (resultArea) resultArea.style.display = "none";
+        if (id === "comparisonPanel") {
+            if (typeof populateCompDocList === "function") populateCompDocList();
         }
     }
 
@@ -253,7 +257,7 @@ function showWorkspace(id) {
 
     if (welcomeScreen) {
         welcomeScreen.style.display =
-            id === "chatArea" ? "block" : "none";
+            id === "chatArea" ? "flex" : "none";
     }
 }
 
@@ -362,61 +366,84 @@ async function loadConversation(id) {
 
 function renderDocuments() {
 
-    if (!list) return;
-
+    // Hide the old separate section entirely
     var docArea = document.getElementById("uploaded-documents-area");
     if (docArea) {
-        docArea.style.display = uploadedDocuments.length ? "block" : "none";
-    }
-
-    if (count) {
-        count.textContent =
-            uploadedDocuments.length + " document" +
-            (uploadedDocuments.length === 1 ? "" : "s") +
-            " in session";
+        docArea.style.display = "none";
     }
 
     if (compareBtn) {
         compareBtn.disabled = selectedDocumentIds.size < 2;
     }
 
-    list.innerHTML =
-        uploadedDocuments.length
-            ? uploadedDocuments
-                  .map(function(doc) {
-                      return '<article class="uploaded-document-card">' +
-                          '<label>' +
-                              '<input type="checkbox" data-doc-id="' + escapeHtml(doc.id || doc.document_id) + '"' +
-                              (selectedDocumentIds.has(doc.id || doc.document_id) ? " checked" : "") +
-                              '>' +
-                              '<strong>' + escapeHtml(doc.filename) + '</strong>' +
-                          '</label>' +
-                          '<small>' +
-                              (doc.page_count ? doc.page_count + " pages" : "Document") +
-                              ' \u00B7 ' +
-                              Number(doc.characters || 0).toLocaleString() + ' characters' +
-                          '</small>' +
-                      '</article>';
-                  })
-                  .join("")
-            : '<p class="empty-state">Upload PDF, DOCX, or TXT files to see them here.</p>';
+    // Render into the inline container next to the attach button
+    var inlineContainer = document.getElementById("inline-doc-chips");
+    if (!inlineContainer) return;
 
-    list
-        .querySelectorAll("input[data-doc-id]")
-        .forEach(function(box) {
+    if (!uploadedDocuments.length) {
+        inlineContainer.innerHTML = "";
+        return;
+    }
 
-            box.addEventListener("change", function() {
+    // Helper: get file type icon
+    function getFileIcon(name) {
+        var ext = (name || "").split(".").pop().toLowerCase();
+        if (ext === "pdf") return "📄";
+        if (ext === "docx" || ext === "doc") return "📝";
+        if (ext === "txt") return "📃";
+        return "📎";
+    }
 
-                if (box.checked) {
-                    selectedDocumentIds.add(box.dataset.docId);
-                } else {
-                    selectedDocumentIds.delete(box.dataset.docId);
-                }
+    // Helper: truncate filename for chip display
+    function truncName(name) {
+        if (!name) return "Document";
+        if (name.length > 22) return name.substring(0, 20) + "…";
+        return name;
+    }
 
-                renderDocuments();
-                if (typeof updateCompareButton === "function") updateCompareButton();
-            });
+    inlineContainer.innerHTML = uploadedDocuments.map(function(doc) {
+        var docId = doc.id || doc.document_id;
+        var isSelected = selectedDocumentIds.has(docId);
+        var cls = "inline-chip" + (isSelected ? " selected" : "");
+        var tooltip = doc.filename +
+            (doc.page_count ? "\n" + doc.page_count + " pages" : "") +
+            (doc.characters ? " · " + Number(doc.characters).toLocaleString() + " chars" : "");
+
+        return '<div class="' + cls + '" data-doc-id="' + escapeHtml(docId) + '" title="' + escapeHtml(tooltip) + '">' +
+            '<span class="inline-chip-icon">' + getFileIcon(doc.filename) + '</span>' +
+            '<span class="inline-chip-name">' + escapeHtml(truncName(doc.filename)) + '</span>' +
+            '<span class="inline-chip-remove" data-remove-id="' + escapeHtml(docId) + '" title="Remove">✕</span>' +
+        '</div>';
+    }).join("");
+
+    // Click chip body to toggle selection
+    inlineContainer.querySelectorAll(".inline-chip[data-doc-id]").forEach(function(chip) {
+        chip.addEventListener("click", function(e) {
+            if (e.target.classList.contains("inline-chip-remove")) return;
+            var docId = chip.dataset.docId;
+            if (selectedDocumentIds.has(docId)) {
+                selectedDocumentIds.delete(docId);
+            } else {
+                selectedDocumentIds.add(docId);
+            }
+            renderDocuments();
+            if (typeof updateCompareButton === "function") updateCompareButton();
         });
+    });
+
+    // Click ✕ to remove document from session
+    inlineContainer.querySelectorAll(".inline-chip-remove").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            var docId = btn.dataset.removeId;
+            selectedDocumentIds.delete(docId);
+            uploadedDocuments = uploadedDocuments.filter(function(d) {
+                return (d.id || d.document_id) !== docId;
+            });
+            renderDocuments();
+            if (typeof updateCompareButton === "function") updateCompareButton();
+        });
+    });
 }
 
 
@@ -471,38 +498,40 @@ if (uploadInput) {
                 (files.length > 1 ? "s" : "") + "\u2026"
             );
 
-            if (progress) progress.textContent = "";
+            if (progress) progress.textContent = "Uploading " + files.length + " file(s)...";
 
-            for (var i = 0; i < files.length; i++) {
+            // Upload all files in parallel
+            var uploadPromises = files.map(function(file, idx) {
+                return uploadFile(file).then(function(doc) {
+                    return { status: "ok", doc: doc, file: file, index: idx };
+                }).catch(function(err) {
+                    return { status: "fail", error: err, file: file, index: idx };
+                });
+            });
 
-                try {
+            var results = await Promise.all(uploadPromises);
 
-                    if (progress) {
-                        progress.textContent =
-                            "Uploading " + (i + 1) + " of " + files.length + ": " + files[i].name + "\u2026";
+            var succeeded = 0;
+            var failed = 0;
+
+            for (var i = 0; i < results.length; i++) {
+                var r = results[i];
+                if (r.status === "ok") {
+                    uploadedDocuments.push(r.doc);
+                    if (r.doc.id) {
+                        selectedDocumentIds.add(r.doc.id);
                     }
-
-                    var doc = await uploadFile(files[i]);
-
-                    uploadedDocuments.push(doc);
-
-                    // Auto-select newly uploaded documents
-                    if (doc.id) {
-                        selectedDocumentIds.add(doc.id);
-                    }
-
-                    if (progress) {
-                        progress.textContent =
-                            "\u2713 Uploaded " + (i + 1) + " of " + files.length + ": " + files[i].name;
-                    }
-
-                } catch (e) {
-
-                    if (progress) {
-                        progress.textContent =
-                            "\u2717 Failed: " + files[i].name + " \u2014 " + e.message;
-                    }
+                    succeeded++;
+                } else {
+                    failed++;
+                    console.error("Upload failed:", r.file.name, r.error);
                 }
+            }
+
+            if (progress) {
+                var msg = "\u2713 " + succeeded + " uploaded";
+                if (failed > 0) msg += ", \u2717 " + failed + " failed";
+                progress.textContent = msg;
             }
 
             renderDocuments();
@@ -527,6 +556,22 @@ async function sendMessage() {
     var message = messageInput ? messageInput.value.trim() : "";
 
     if (!message || busy) return;
+
+    // ── Check if documents are needed but none are uploaded ──
+    var docKeywords = /\b(summarize|summary|explain|study|analyze|analyse|document|uploaded|pdf|file|content|key points|revision|notes|insights|compare|comparison)\b/i;
+    if (uploadedDocuments.length === 0 && docKeywords.test(message)) {
+        addMessage(message, "user");
+        messageInput.value = "";
+        addMessage(
+            "📄 **No documents uploaded yet!**\n\n" +
+            "It looks like you're asking about a document, but no files have been uploaded in this session.\n\n" +
+            "Please upload a document first using the 📎 button below, then try again.",
+            "assistant"
+        );
+        if (welcomeScreen) welcomeScreen.style.display = "none";
+        messages.style.display = "flex";
+        return;
+    }
 
     busy = true;
 
@@ -692,7 +737,7 @@ $("newChatBtn")?.addEventListener(
 
         messages.innerHTML = "";
 
-        welcomeScreen.style.display = "block";
+        welcomeScreen.style.display = "flex";
 
         showWorkspace("chatArea");
 
@@ -1545,6 +1590,217 @@ function hexToRgba(hex, alpha) {
     var g = parseInt(hex.slice(3, 5), 16);
     var b = parseInt(hex.slice(5, 7), 16);
     return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+}
+
+
+/* =========================
+   COMPARISON PANEL LOGIC
+========================= */
+
+var compSelectedIds = new Set();
+
+function populateCompDocList() {
+    var listEl = document.getElementById("comp-doc-list");
+    var countEl = document.getElementById("comp-selected-count");
+    var btn = document.getElementById("comp-compare-btn");
+    if (!listEl) return;
+
+    // Clear
+    listEl.innerHTML = "";
+    compSelectedIds.clear();
+    if (countEl) countEl.textContent = "0 selected";
+    if (btn) btn.disabled = true;
+
+    if (!uploadedDocuments || uploadedDocuments.length === 0) {
+        listEl.innerHTML = '<p class="empty-state">No documents uploaded yet. Upload documents in the AI Assistant tab first.</p>';
+        return;
+    }
+
+    uploadedDocuments.forEach(function(doc) {
+        var docId = doc.id || doc.document_id;
+        var card = document.createElement("div");
+        card.className = "comp-doc-card";
+        card.dataset.docId = docId;
+
+        var checkbox = document.createElement("span");
+        checkbox.className = "comp-doc-checkbox";
+        checkbox.textContent = "✓";
+
+        var icon = document.createElement("span");
+        icon.className = "comp-doc-icon";
+        icon.textContent = "📄";
+
+        var name = document.createElement("span");
+        name.className = "comp-doc-name";
+        name.textContent = doc.filename || "Document";
+        name.title = doc.filename || "Document";
+
+        card.appendChild(checkbox);
+        card.appendChild(icon);
+        card.appendChild(name);
+
+        card.addEventListener("click", function() {
+            if (compSelectedIds.has(docId)) {
+                compSelectedIds.delete(docId);
+                card.classList.remove("selected");
+            } else {
+                compSelectedIds.add(docId);
+                card.classList.add("selected");
+            }
+            if (countEl) countEl.textContent = compSelectedIds.size + " selected";
+            if (btn) btn.disabled = compSelectedIds.size < 2;
+        });
+
+        listEl.appendChild(card);
+    });
+}
+
+// Compare button in comparison panel
+var compCompareBtn = document.getElementById("comp-compare-btn");
+if (compCompareBtn) {
+    compCompareBtn.addEventListener("click", async function() {
+        if (compSelectedIds.size < 2 || busy) return;
+
+        busy = true;
+        compCompareBtn.disabled = true;
+        compCompareBtn.textContent = "⏳ Comparing...";
+
+        var resultArea = document.getElementById("comparison-result-area");
+        if (resultArea) {
+            resultArea.innerHTML = '<div class="comp-loading"><div class="comp-loading-spinner"></div><span class="comp-loading-text">Analyzing documents…</span></div>';
+        }
+
+        // Build prompt
+        var selectedDocs = uploadedDocuments.filter(function(d) {
+            return compSelectedIds.has(d.id || d.document_id);
+        });
+        var docNames = selectedDocs.map(function(d) { return d.filename; }).join(", ");
+        var comparePrompt = "Compare these documents in detail: " + docNames + ". " +
+            "List the key similarities and differences between them. " +
+            "Use clear sections for Similarities, Differences, and a Summary. " +
+            "Include visual charts where possible (radar, bar, or table).";
+
+        try {
+            var docIds = Array.from(compSelectedIds);
+            var response = await fetch(API_URL + "/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    message: comparePrompt,
+                    document_ids: docIds,
+                    conversation_id: currentConversationId
+                })
+            });
+
+            var data = await response.json().catch(function() { return {}; });
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Comparison failed (" + response.status + ")");
+            }
+
+            if (data.conversation_id && !currentConversationId) {
+                currentConversationId = data.conversation_id;
+                loadConversations();
+            }
+
+            var result = data.response || data.answer || "No comparison generated.";
+            var sources = data.sources || [];
+
+            // Render result inside the comparison panel result area
+            if (resultArea) {
+                resultArea.innerHTML = "";
+
+                var msgDiv = document.createElement("div");
+                msgDiv.className = "message assistant";
+
+                var avatar = document.createElement("div");
+                avatar.className = "avatar";
+                avatar.textContent = "\u2726";
+                msgDiv.appendChild(avatar);
+
+                var content = document.createElement("div");
+                content.className = "message-content";
+
+                // Use the same rendering logic as addMessage
+                var vizRendered = false;
+                var allJsonBlocks = result.match(/```json[\s\S]*?```/g);
+                if (allJsonBlocks && allJsonBlocks.length > 0 && typeof renderVisualization === "function") {
+                    var cleanText = result.replace(/```json[\s\S]*?```/g, "").trim();
+                    if (cleanText) {
+                        var textP = document.createElement("div");
+                        textP.innerHTML = renderMarkdown(cleanText);
+                        content.appendChild(textP);
+                    }
+                    for (var vi = 0; vi < allJsonBlocks.length; vi++) {
+                        try {
+                            var jsonStr = allJsonBlocks[vi].replace(/```json\s*/, "").replace(/```$/, "").trim();
+                            var vizObj = JSON.parse(jsonStr);
+                            if (vizObj && vizObj.type) {
+                                renderVisualization(vizObj, content);
+                                vizRendered = true;
+                            }
+                        } catch(e) {}
+                    }
+                }
+
+                if (!vizRendered) {
+                    content.innerHTML = renderMarkdown(result);
+                }
+
+                // Add sources
+                if (sources && sources.length > 0) {
+                    var srcDiv = document.createElement("div");
+                    srcDiv.className = "message-sources";
+                    var srcLabel = document.createElement("span");
+                    srcLabel.className = "sources-label";
+                    srcLabel.textContent = "Sources";
+                    srcDiv.appendChild(srcLabel);
+                    for (var si = 0; si < sources.length; si++) {
+                        var s = sources[si];
+                        var srcItem = document.createElement("span");
+                        srcItem.className = "source-item";
+                        srcItem.textContent = "📄 " + (s.document_name || "Document") + (s.page_number != null ? " — Page " + s.page_number : "");
+                        srcDiv.appendChild(srcItem);
+                    }
+                    content.appendChild(srcDiv);
+                }
+
+                // Add toolbar
+                var toolbar = document.createElement("div");
+                toolbar.className = "message-toolbar";
+                var dlBtn = document.createElement("button");
+                dlBtn.className = "toolbar-btn";
+                dlBtn.innerHTML = "⇣ Download PDF";
+                dlBtn.addEventListener("click", function() {
+                    downloadMessageAsPDF(content, result);
+                });
+                var copyBtn = document.createElement("button");
+                copyBtn.className = "toolbar-btn";
+                copyBtn.innerHTML = "📋 Copy";
+                copyBtn.addEventListener("click", function() {
+                    navigator.clipboard.writeText(result).then(function() {
+                        copyBtn.textContent = "✓ Copied!";
+                        setTimeout(function() { copyBtn.innerHTML = "📋 Copy"; }, 2000);
+                    });
+                });
+                toolbar.appendChild(dlBtn);
+                toolbar.appendChild(copyBtn);
+                content.appendChild(toolbar);
+
+                msgDiv.appendChild(content);
+                resultArea.appendChild(msgDiv);
+            }
+
+        } catch (e) {
+            if (resultArea) {
+                resultArea.innerHTML = '<div class="comp-loading"><span class="comp-loading-text" style="color:var(--danger);">❌ ' + e.message + '</span></div>';
+            }
+        } finally {
+            busy = false;
+            compCompareBtn.disabled = false;
+            compCompareBtn.textContent = "⇄ Compare Selected";
+        }
+    });
 }
 
 

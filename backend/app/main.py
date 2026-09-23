@@ -32,6 +32,51 @@ app = FastAPI(title="DocTalk API")
 app.include_router(document_router)
 
 
+# ---------------------------------------------------------
+# Startup: 30-day document retention cleanup
+# ---------------------------------------------------------
+
+@app.on_event("startup")
+async def cleanup_expired_documents():
+    """
+    On server startup, delete any documents older than 30 days.
+    This enforces the retention policy automatically.
+    """
+    from app import metadata_store
+    from app import storage_service
+
+    expired = metadata_store.get_expired_documents(days=30)
+    if not expired:
+        logger.info("Retention cleanup: no expired documents found.")
+        return
+
+    logger.info(f"Retention cleanup: found {len(expired)} expired document(s).")
+
+    for doc in expired:
+        try:
+            # Delete blob from Azure Storage
+            try:
+                await storage_service.delete_blob(doc.blob_path)
+            except Exception:
+                pass
+
+            # Delete search index chunks
+            try:
+                from app.search_service import delete_document_chunks
+                delete_document_chunks(doc.document_id)
+            except Exception:
+                pass
+
+            # Delete metadata
+            metadata_store.delete_document(doc.document_id)
+            logger.info(
+                f"  Deleted expired: {doc.filename} "
+                f"(uploaded {doc.uploaded_at})"
+            )
+        except Exception as e:
+            logger.error(f"  Failed to delete {doc.document_id}: {e}")
+
+
 
 # ---------------------------------------------------------
 # CORS

@@ -61,3 +61,41 @@ def generate_embedding(text: str) -> list[float]:
         )
 
     return embedding
+
+
+def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
+    """
+    Generate embeddings for multiple texts in a single API call.
+    Much faster than calling generate_embedding() in a loop.
+    The OpenAI embeddings API accepts a list of inputs natively.
+    """
+
+    if not texts:
+        return []
+
+    # Filter out empty texts and track indices
+    valid = [(i, t) for i, t in enumerate(texts) if t.strip()]
+    if not valid:
+        return [[] for _ in texts]
+
+    valid_indices, valid_texts = zip(*valid)
+
+    # Send all texts in one batch (API supports up to ~2048 inputs)
+    BATCH_SIZE = 100
+    all_embeddings = [None] * len(texts)
+
+    for batch_start in range(0, len(valid_texts), BATCH_SIZE):
+        batch_texts = list(valid_texts[batch_start:batch_start + BATCH_SIZE])
+        batch_indices = list(valid_indices[batch_start:batch_start + BATCH_SIZE])
+
+        response = get_openai_client().embeddings.create(
+            input=batch_texts,
+            model=EMBEDDING_MODEL,
+            dimensions=EMBEDDING_DIMENSIONS,
+        )
+
+        for j, item in enumerate(response.data):
+            all_embeddings[batch_indices[j]] = item.embedding
+
+    # Fill any remaining Nones with empty lists
+    return [e if e is not None else [] for e in all_embeddings]

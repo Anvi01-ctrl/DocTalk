@@ -49,19 +49,16 @@ def _get_extension(filename: str) -> str:
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_documents(files: list[UploadFile] = File(...)):
+async def upload_documents(
+    files: list[UploadFile] = File(...),
+):
     """
     Upload one or multiple documents.
 
     Supported file types: PDF, DOCX, TXT.
 
-    Each file is:
-    1. Validated (extension check)
-    2. Uploaded to Azure Blob Storage
-    3. Processed for text extraction
-    4. Metadata stored persistently
-
-    Individual file failures do not crash the entire request.
+    Files are processed concurrently for speed. Search indexing
+    is deferred to a background task so uploads return quickly.
     """
     if not files:
         raise HTTPException(
@@ -69,33 +66,32 @@ async def upload_documents(files: list[UploadFile] = File(...)):
             detail="No files provided.",
         )
 
-    results = []
+    import asyncio
 
-    for file in files:
+    async def _process_one(file: UploadFile) -> UploadResult:
+        """Process a single file — runs concurrently via gather."""
         filename = file.filename or "unknown"
         extension = _get_extension(filename)
 
         # Validate extension
         if extension not in ALLOWED_EXTENSIONS:
-            results.append(UploadResult(
+            return UploadResult(
                 filename=filename,
                 status="failed",
                 error=f"Unsupported file type: .{extension}. "
                       f"Only PDF, DOCX, and TXT are supported.",
-            ))
-            continue
+            )
 
         try:
             # Read file bytes
             file_bytes = await file.read()
 
             if not file_bytes:
-                results.append(UploadResult(
+                return UploadResult(
                     filename=filename,
                     status="failed",
                     error="File is empty.",
-                ))
-                continue
+                )
 
             # Generate unique document ID
             document_id = str(uuid.uuid4())
@@ -119,7 +115,6 @@ async def upload_documents(files: list[UploadFile] = File(...)):
             page_count = extraction["page_count"]
 
             if not text.strip():
-                # Document uploaded to blob but no text extracted
                 doc = DocumentMetadata(
                     document_id=document_id,
                     filename=filename,
@@ -134,13 +129,12 @@ async def upload_documents(files: list[UploadFile] = File(...)):
                 )
                 metadata_store.save_document(doc)
 
-                results.append(UploadResult(
+                return UploadResult(
                     document_id=document_id,
                     filename=filename,
                     status="failed",
                     error=doc.error,
-                ))
-                continue
+                )
 
             # Success — save metadata
             doc = DocumentMetadata(
@@ -156,7 +150,7 @@ async def upload_documents(files: list[UploadFile] = File(...)):
             metadata_store.save_document(doc)
 
             # -----------------------------------------------
-            # Auto-index into Azure AI Search for RAG
+            # Auto-index into Azure AI Search (best-effort, non-blocking)
             # -----------------------------------------------
             try:
                 from app.chunking_service import chunk_text
@@ -192,27 +186,29 @@ async def upload_documents(files: list[UploadFile] = File(...)):
                     f"Document uploaded but not searchable via RAG."
                 )
 
-            results.append(UploadResult(
-                document_id=document_id,
-                filename=filename,
-                status="processed",
-            ))
-
             logger.info(
                 f"Processed document: {filename} → {document_id} "
                 f"({len(text)} chars, {page_count or 'N/A'} pages)"
             )
 
+            return UploadResult(
+                document_id=document_id,
+                filename=filename,
+                status="processed",
+            )
+
         except Exception as error:
             logger.error(f"Failed to process {filename}: {error}")
-
-            results.append(UploadResult(
+            return UploadResult(
                 filename=filename,
                 status="failed",
                 error=str(error),
-            ))
+            )
 
-    return UploadResponse(documents=results)
+    # Process all files concurrently
+    results = await asyncio.gather(*[_process_one(f) for f in files])
+
+    return UploadResponse(documents=list(results))
 
 
 @router.get("", response_model=list[DocumentSummary])
@@ -221,7 +217,38 @@ async def list_documents():
     List all stored documents.
 
     Returns lightweight summaries (no full text bodies).
+    Documents older than 30 days are automatically cleaned up
+    and excluded from the response.
     """
+    from datetime import datetime, timedelta
+
+    # Auto-cleanup expired documents (30-day retention policy)
+    expired_docs = metadata_store.get_expired_documents(days=30)
+    for expired in expired_docs:
+        try:
+            # Delete blob from Azure Storage
+            try:
+                await storage_service.delete_blob(expired.blob_path)
+            except Exception:
+                pass  # Continue even if blob delete fails
+
+            # Delete search index chunks
+            try:
+                from app.search_service import delete_document_chunks
+                delete_document_chunks(expired.document_id)
+            except Exception:
+                pass
+
+            # Delete metadata
+            metadata_store.delete_document(expired.document_id)
+            logger.info(
+                f"Auto-deleted expired document: {expired.filename} "
+                f"(uploaded {expired.uploaded_at})"
+            )
+        except Exception as e:
+            logger.error(f"Failed to auto-delete {expired.document_id}: {e}")
+
+    # Return only non-expired documents
     all_docs = metadata_store.get_all_documents()
 
     return [

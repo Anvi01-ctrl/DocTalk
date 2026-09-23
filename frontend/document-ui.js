@@ -49,6 +49,20 @@ function renderMyDocuments(docs) {
         var card = document.createElement("div");
         card.className = "my-doc-card";
 
+        // Calculate expiry days
+        var daysRemaining = 30;
+        if (doc.uploaded_at) {
+            var uploadDate = new Date(doc.uploaded_at);
+            var now = new Date();
+            var elapsed = Math.floor((now - uploadDate) / (1000 * 60 * 60 * 24));
+            daysRemaining = Math.max(0, 30 - elapsed);
+        }
+
+        // Determine expiry badge class
+        var expiryClass = "safe";
+        if (daysRemaining <= 5) expiryClass = "danger";
+        else if (daysRemaining <= 15) expiryClass = "warning";
+
         // Checkbox for selection
         var label = document.createElement("label");
         label.className = "my-doc-label";
@@ -88,6 +102,20 @@ function renderMyDocuments(docs) {
         label.appendChild(cb);
         label.appendChild(nameSpan);
         card.appendChild(label);
+
+        // Expiry badge
+        var expiryBadge = document.createElement("span");
+        expiryBadge.className = "doc-expiry-badge " + expiryClass;
+        var dot = document.createElement("span");
+        dot.className = "expiry-dot";
+        expiryBadge.appendChild(dot);
+        var expiryText = document.createTextNode(
+            daysRemaining === 0 ? "Expiring today" :
+            daysRemaining === 1 ? "Expires in 1 day" :
+            "Expires in " + daysRemaining + " days"
+        );
+        expiryBadge.appendChild(expiryText);
+        card.appendChild(expiryBadge);
 
         // Meta info
         var meta = document.createElement("small");

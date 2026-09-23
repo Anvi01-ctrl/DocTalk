@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>DocTalk — AI Document Intelligence</title>
+    <meta name="description" content="DocTalk is an AI-powered document intelligence platform. Upload, analyze, summarize, and compare documents with AI assistance.">
 
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -17,23 +18,48 @@
 
     <div class="app">
 
-        <!-- Sidebar -->
+        <!-- ========== SIDEBAR ========== -->
         <aside class="sidebar">
 
+            <!-- Brand -->
             <div class="brand">
-                <div class="brand-icon">✦</div>
-
+                <div class="brand-icon">
+                    <span class="material-symbols-outlined" style="font-size:22px;color:white;">auto_awesome</span>
+                </div>
                 <div>
                     <h2>DocTalk</h2>
                     <p>AI Document Intelligence</p>
                 </div>
             </div>
 
+            <!-- New Conversation -->
             <button class="new-chat-btn" id="newChatBtn" type="button">
-                <span>＋</span>
+                <span class="material-symbols-outlined" style="font-size:18px;">add</span>
                 New conversation
             </button>
 
+            <!-- Workspace Nav -->
+            <div class="sidebar-section">
+                <p class="section-label">WORKSPACES</p>
+
+                <div class="sidebar-item active" data-target="chatArea" role="button" tabindex="0">
+                    <span class="material-symbols-outlined" style="font-size:18px;">forum</span>
+                    <span>AI Assistant</span>
+                </div>
+
+                <div class="sidebar-item" data-target="comparisonPanel" role="button" tabindex="0">
+                    <span class="material-symbols-outlined" style="font-size:18px;">difference</span>
+                    <span>Compare Documents</span>
+                </div>
+
+                <div class="sidebar-item" data-target="myDocumentsPanel" role="button" tabindex="0">
+                    <span class="material-symbols-outlined" style="font-size:18px;">folder_open</span>
+                    <span>My Documents</span>
+                    <span class="sidebar-badge" id="myDocsBadge"></span>
+                </div>
+            </div>
+
+            <!-- Recent Chats -->
             <div class="sidebar-section" id="recentChatsSection">
                 <p class="section-label">RECENT CHATS</p>
                 <ul id="conversationList" class="conversation-list">
@@ -41,80 +67,79 @@
                 </ul>
             </div>
 
-            <div class="sidebar-section">
-
-                <p class="section-label">WORKSPACE</p>
-
-                <!-- AI Assistant -->
-                <div class="sidebar-item active" data-target="chatArea" role="button" tabindex="0">
-                    <span>▣</span>
-                    <span>AI Assistant</span>
-                </div>
-
-
-
-                <!-- Compare Documents -->
-                <div class="sidebar-item" data-target="comparisonPanel" role="button" tabindex="0">
-                    <span>⇄</span>
-                    <span>Compare Documents</span>
-                </div>
-
-                <!-- My Documents -->
-                <div class="sidebar-item" data-target="myDocumentsPanel" role="button" tabindex="0">
-                    <span>▤</span>
-                    <span>My Documents</span>
-                </div>
-
-
-
-            </div>
-
+            <!-- Bottom: Connection Status -->
             <div class="sidebar-bottom">
-
                 <div class="connection-status">
                     <span class="status-dot"></span>
-
                     <div>
-                        <strong>Azure AI Connected</strong>
+                        <strong>Systems operational</strong>
                         <small>DocTalk-Agent</small>
                     </div>
                 </div>
-
             </div>
 
         </aside>
 
 
-        <!-- Main Content -->
+        <!-- ========== MAIN CONTENT ========== -->
         <main class="main-content">
 
             <!-- Top Bar -->
             <header class="topbar">
 
-                <div class="mobile-brand">
-                    <span class="brand-icon">✦</span>
-                    <strong>DocTalk</strong>
+                <div class="topbar-left">
+                    <div class="mobile-brand">
+                        <span class="material-symbols-outlined" style="font-size:22px;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">auto_awesome</span>
+                        <strong>DocTalk</strong>
+                    </div>
+
+                    <!-- Context indicator -->
+                    <div class="topbar-context">
+                        <span class="topbar-context-label">DocTalk AI Workspace</span>
+                        <span class="topbar-context-badge">RAG Engine v2.4</span>
+                    </div>
                 </div>
 
                 <div class="topbar-right">
+
+                    <!-- Agent Online Status -->
+                    <div class="agent-status-pill">
+                        <span class="agent-status-dot"></span>
+                        <span>Agent online</span>
+                    </div>
+
+                    <!-- Export PDF -->
                     <button class="export-conv-btn" onclick="exportConversationAsPDF()" title="Export conversation as PDF">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Export PDF
                     </button>
-                    <span class="online-dot"></span>
-                    <span>Agent online</span>
+
                 </div>
 
             </header>
 
 
-            <!-- Chat Area -->
+            <!-- ========== CHAT AREA ========== -->
             <section class="chat-area" id="chatArea">
 
                 <!-- Welcome Screen -->
                 <div class="welcome-screen" id="welcomeScreen">
 
-                    <div class="welcome-icon">✦</div>
+                    <div class="welcome-icon-container">
+                        <div class="welcome-icon-glow"></div>
+                        <div class="welcome-icon">
+                            <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#818CF8"/>
+                                        <stop offset="50%" stop-color="#C084FC"/>
+                                        <stop offset="100%" stop-color="#22D3EE"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M18 0C18 9.94112 26.0589 18 36 18C26.0589 18 18 26.0589 18 36C18 26.0589 9.94112 18 0 18C9.94112 18 18 9.94112 18 0Z" fill="url(#sparkleGrad)"/>
+                            </svg>
+                        </div>
+                    </div>
 
                     <p class="eyebrow">
                         YOUR AI DOCUMENT ASSISTANT
@@ -127,69 +152,67 @@
 
                     <p class="welcome-description">
                         Upload documents, ask questions, summarize content,
-                        and explore information with your AI assistant.
+                        and explore insights with your AI assistant.
                     </p>
 
 
-                    <!-- Quick Suggestions -->
+                    <!-- Suggestion Cards -->
                     <div class="suggestion-grid">
 
                         <button class="suggestion-card" type="button"
                             data-prompt="Give me a concise summary of the uploaded document.">
-                            <span class="suggestion-icon">▤</span>
-
-                            <strong>Summarize</strong>
-
-                            <small>
-                                Get the key points from a document.
-                            </small>
+                            <div class="suggestion-card-top">
+                                <span class="suggestion-icon">
+                                    <span class="material-symbols-outlined" style="font-size:20px;">summarize</span>
+                                </span>
+                                <span class="suggestion-arrow">›</span>
+                            </div>
+                            <strong>Summarize key points</strong>
+                            <small>Extract the most important information from your document.</small>
                         </button>
 
 
                         <button class="suggestion-card" type="button"
                             data-prompt="Explain the important concepts in the uploaded document in simple language.">
-                            <span class="suggestion-icon">✧</span>
-
+                            <div class="suggestion-card-top">
+                                <span class="suggestion-icon">
+                                    <span class="material-symbols-outlined" style="font-size:20px;">psychology</span>
+                                </span>
+                                <span class="suggestion-arrow">›</span>
+                            </div>
                             <strong>Explain simply</strong>
-
-                            <small>
-                                Understand difficult concepts.
-                            </small>
+                            <small>Break down complex concepts into plain language.</small>
                         </button>
 
 
                         <button class="suggestion-card" type="button"
                             data-prompt="Create useful study notes from the uploaded document.">
-                            <span class="suggestion-icon">☷</span>
-
+                            <div class="suggestion-card-top">
+                                <span class="suggestion-icon">
+                                    <span class="material-symbols-outlined" style="font-size:20px;">fact_check</span>
+                                </span>
+                                <span class="suggestion-arrow">›</span>
+                            </div>
                             <strong>Study mode</strong>
-
-                            <small>
-                                Create notes and revision material.
-                            </small>
+                            <small>Create notes and revision material from your documents.</small>
                         </button>
 
 
                         <button class="suggestion-card" type="button"
                             data-prompt="Analyze the uploaded document and identify the most important insights.">
-                            <span class="suggestion-icon">◈</span>
-
-                            <strong>Analyze</strong>
-
-                            <small>
-                                Discover important insights.
-                            </small>
+                            <div class="suggestion-card-top">
+                                <span class="suggestion-icon">
+                                    <span class="material-symbols-outlined" style="font-size:20px;">analytics</span>
+                                </span>
+                                <span class="suggestion-arrow">›</span>
+                            </div>
+                            <strong>Analyze & discover</strong>
+                            <small>Discover important insights and patterns in your data.</small>
                         </button>
 
                     </div>
 
                 </div>
-
-
-
-
-
-
 
 
                 <!-- Chat Messages -->
@@ -215,29 +238,41 @@
             </section>
 
 
-            <!-- Compare Documents Panel (dynamic) -->
+            <!-- Compare Documents Panel -->
             <section class="comparison-panel" id="comparisonPanel">
 
                 <div class="comparison-header">
                     <div>
-                        <p class="eyebrow">
-                            DOCUMENT COMPARISON
-                        </p>
+                        <p class="eyebrow">DOCUMENT COMPARISON</p>
                         <h2>Compare documents</h2>
                         <p class="comparison-description">
-                            Select 2+ documents and click Compare to see AI-powered analysis.
+                            Select 2 or more documents below, then click Compare to generate an AI-powered analysis.
                         </p>
                     </div>
                 </div>
 
-                <div id="comparison-result-area" class="comparison-result-area">
-                    <p class="empty-state">Select documents and click "Compare selected" to see the comparison.</p>
+                <div class="comp-doc-selector">
+                    <div class="comp-doc-selector-header">
+                        <span class="comp-doc-selector-label">📄 Select Documents</span>
+                        <span id="comp-selected-count" class="comp-selected-count">0 selected</span>
+                    </div>
+                    <div id="comp-doc-list" class="comp-doc-list">
+                        <p class="empty-state">No documents uploaded yet. Upload documents in the AI Assistant tab first.</p>
+                    </div>
                 </div>
+
+                <div class="comp-action-bar">
+                    <button id="comp-compare-btn" class="primary-button comp-compare-btn" type="button" disabled>
+                        ⇄ Compare Selected
+                    </button>
+                </div>
+
+                <div id="comparison-result-area" class="comparison-result-area"></div>
 
             </section>
 
 
-            <!-- My Documents Panel -->
+            <!-- ========== MY DOCUMENTS PANEL ========== -->
             <section class="my-documents-panel" id="myDocumentsPanel">
 
                 <div class="my-documents-header">
@@ -248,9 +283,24 @@
                     </div>
 
                     <label class="primary-button upload-label" for="document-upload-library">
-                        📎 Upload Documents
+                        <span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span> Upload Documents
                     </label>
                     <input id="document-upload-library" type="file" accept=".pdf,.docx,.txt" multiple hidden>
+                </div>
+
+                <!-- 30-Day Retention Policy Banner -->
+                <div class="retention-banner">
+                    <div class="retention-banner-icon">
+                        <span class="material-symbols-outlined">schedule</span>
+                    </div>
+                    <div class="retention-banner-content">
+                        <div class="retention-banner-title">
+                            30-Day Retention Policy Active
+                        </div>
+                        <p class="retention-banner-text">
+                            Documents are automatically removed after 30 days to keep your workspace clean. Download important files before they expire.
+                        </p>
+                    </div>
                 </div>
 
                 <div id="my-documents-list" class="my-documents-list">
@@ -260,49 +310,49 @@
             </section>
 
 
-
-
-
-
             </section>
 
 
-            <!-- Message Input Area -->
+            <!-- ========== INPUT BAR ========== -->
             <div class="input-section">
 
                 <div class="input-wrapper">
 
-                    <!-- Upload Button -->
-                    <label class="attach-button" for="document-upload" title="Upload document"
-                        aria-label="Upload document">
-                        📎
-                    </label>
-
-
-                    <!-- Hidden File Input -->
-                    <input id="document-upload" type="file" accept=".pdf,.docx,.txt" multiple hidden>
-
+                    <!-- Doc chips above textarea (ChatGPT style) -->
+                    <div id="inline-doc-chips" class="inline-doc-chips"></div>
 
                     <!-- Message Input -->
                     <textarea id="messageInput" placeholder="Ask DocTalk anything..." rows="1"></textarea>
 
-                    <!-- Generate Infographic Button -->
-                    <button id="infographicBtn" class="infographic-btn" type="button" title="Generate visual infographic from document"
-                        aria-label="Generate Infographic" onclick="generateInfographic()">
-                        🎨
-                    </button>
+                    <!-- Bottom toolbar row -->
+                    <div class="input-toolbar">
+                        <!-- Upload Button -->
+                        <label class="attach-button" for="document-upload" title="Upload document"
+                            aria-label="Upload document">
+                            +
+                        </label>
 
-                    <!-- Send Button -->
-                    <button id="sendBtn" class="send-btn" type="button" title="Send message" aria-label="Send message">
-                        ↑
-                    </button>
+                        <!-- Hidden File Input -->
+                        <input id="document-upload" type="file" accept=".pdf,.docx,.txt" multiple hidden>
+
+                        <div class="input-toolbar-right">
+                            <!-- Generate Infographic Button -->
+                            <button id="infographicBtn" class="infographic-btn" type="button" title="Generate visual infographic"
+                                aria-label="Generate Infographic" onclick="generateInfographic()">
+                                🎨
+                            </button>
+
+                            <!-- Send Button -->
+                            <button id="sendBtn" class="send-btn" type="button" title="Send message" aria-label="Send message">
+                                ↑
+                            </button>
+                        </div>
+                    </div>
 
                 </div>
 
-
                 <!-- Upload Status -->
                 <p id="upload-status" class="upload-status" aria-live="polite"></p>
-
 
                 <p class="input-hint">
                     DocTalk can help you understand and analyze your documents.
@@ -319,6 +369,16 @@
     <script src="script.js"></script>
     <script src="document-ui.js"></script>
 
+    <script>
+    // Update badge for My Documents count
+    function updateMyDocsBadge(count) {
+        var badge = document.getElementById('myDocsBadge');
+        if (badge) {
+            badge.textContent = count > 0 ? count : '';
+            badge.style.display = count > 0 ? 'inline-flex' : 'none';
+        }
+    }
+    </script>
 
 </body>
 
