@@ -625,13 +625,23 @@ function _updateUploadProgress(idx, phase, percent, loadedBytes) {
         fill.className = "upl-card-fill upl-card-processing";
         if (pct) pct.textContent = "Processing…";
         if (sizeEl) sizeEl.textContent = _formatFileSize(totalSize);
-        if (statusEl) statusEl.textContent = "Processing document...";
+        if (statusEl) {
+            statusEl.textContent = "Extracting text...";
+            // Cycle through status messages to show progress
+            var _procMsgs = ["Extracting text...", "Reading pages...", "Analyzing content...", "Almost done..."];
+            var _procIdx = 0;
+            if (statusEl._procTimer) clearInterval(statusEl._procTimer);
+            statusEl._procTimer = setInterval(function() {
+                _procIdx = (_procIdx + 1) % _procMsgs.length;
+                statusEl.textContent = _procMsgs[_procIdx];
+            }, 1500);
+        }
     } else if (phase === "done") {
         fill.style.width = "100%";
         fill.className = "upl-card-fill upl-card-done";
         if (pct) { pct.textContent = "Ready"; pct.classList.add("upl-pct-done"); }
         if (sizeEl) sizeEl.textContent = _formatFileSize(totalSize);
-        if (statusEl) statusEl.textContent = "Upload complete";
+        if (statusEl) { if (statusEl._procTimer) { clearInterval(statusEl._procTimer); statusEl._procTimer = null; } statusEl.textContent = "Upload complete"; }
         if (innerEl) innerEl.classList.add("upl-inner-complete");
         if (glowEl) glowEl.classList.add("upl-glow-complete");
         // Swap icon to checkmark
@@ -643,7 +653,7 @@ function _updateUploadProgress(idx, phase, percent, loadedBytes) {
         fill.className = "upl-card-fill upl-card-error";
         fill.style.width = "100%";
         if (pct) { pct.textContent = "Failed"; pct.classList.add("upl-pct-error"); }
-        if (statusEl) statusEl.textContent = "Upload failed";
+        if (statusEl) { if (statusEl._procTimer) { clearInterval(statusEl._procTimer); statusEl._procTimer = null; } statusEl.textContent = "Upload failed"; }
         if (innerEl) innerEl.classList.add("upl-inner-error");
         if (glowEl) glowEl.classList.add("upl-glow-error");
         if (iconEl) {

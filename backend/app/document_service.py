@@ -175,7 +175,7 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
 def _run_doc_intelligence_sync(client, file_bytes: bytes):
     """Synchronous Document Intelligence call — run in executor."""
     poller = client.begin_analyze_document(
-        model_id="prebuilt-layout",
+        model_id="prebuilt-read",
         body=AnalyzeDocumentRequest(
             bytes_source=file_bytes,
         ),
