@@ -7,6 +7,7 @@ Uses connection string for authentication.
 
 import os
 import logging
+import asyncio
 
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
@@ -23,21 +24,45 @@ STORAGE_CONTAINER = os.getenv("AZURE_STORAGE_CONTAINER", "documents")
 CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 
 
+# Cached singleton clients — avoids re-creating connections on every call
+_blob_service_client = None
+_container_client = None
+
+
 def _get_blob_service_client() -> BlobServiceClient:
-    """Create a BlobServiceClient using Connection String."""
+    """Create a BlobServiceClient using Connection String (cached singleton)."""
+    global _blob_service_client
+
+    if _blob_service_client is not None:
+        return _blob_service_client
+
     if not CONNECTION_STRING:
         raise RuntimeError(
             "AZURE_STORAGE_CONNECTION_STRING is not set. "
             "Check your .env file or environment variables."
         )
 
-    return BlobServiceClient.from_connection_string(CONNECTION_STRING)
+    _blob_service_client = BlobServiceClient.from_connection_string(CONNECTION_STRING)
+    return _blob_service_client
 
 
 def _get_container_client():
-    """Get the container client for the documents container."""
+    """Get the container client for the documents container (cached singleton)."""
+    global _container_client
+
+    if _container_client is not None:
+        return _container_client
+
     service_client = _get_blob_service_client()
-    return service_client.get_container_client(STORAGE_CONTAINER)
+    _container_client = service_client.get_container_client(STORAGE_CONTAINER)
+    return _container_client
+
+
+def _upload_blob_sync(blob_path: str, file_bytes: bytes):
+    """Synchronous blob upload — meant to be run in a thread executor."""
+    container_client = _get_container_client()
+    blob_client = container_client.get_blob_client(blob_path)
+    blob_client.upload_blob(file_bytes, overwrite=True)
 
 
 async def upload_blob(document_id: str, filename: str, file_bytes: bytes) -> str:
@@ -47,14 +72,20 @@ async def upload_blob(document_id: str, filename: str, file_bytes: bytes) -> str
     Blob path: documents/<document_id>/<filename>
 
     Returns the blob path.
+
+    The synchronous Azure SDK call runs in a thread executor
+    so it doesn't block the async event loop.
     """
     blob_path = f"{document_id}/{filename}"
 
     try:
-        container_client = _get_container_client()
-        blob_client = container_client.get_blob_client(blob_path)
-
-        blob_client.upload_blob(file_bytes, overwrite=True)
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            _upload_blob_sync,
+            blob_path,
+            file_bytes,
+        )
 
         logger.info(f"Uploaded blob: {blob_path}")
         return blob_path
@@ -64,6 +95,13 @@ async def upload_blob(document_id: str, filename: str, file_bytes: bytes) -> str
         raise
 
 
+def _delete_blob_sync(blob_path: str):
+    """Synchronous blob delete — meant to be run in a thread executor."""
+    container_client = _get_container_client()
+    blob_client = container_client.get_blob_client(blob_path)
+    blob_client.delete_blob()
+
+
 async def delete_blob(blob_path: str) -> bool:
     """
     Delete a blob from Azure Blob Storage.
@@ -71,10 +109,12 @@ async def delete_blob(blob_path: str) -> bool:
     Returns True if deleted, False if not found.
     """
     try:
-        container_client = _get_container_client()
-        blob_client = container_client.get_blob_client(blob_path)
-
-        blob_client.delete_blob()
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            _delete_blob_sync,
+            blob_path,
+        )
 
         logger.info(f"Deleted blob: {blob_path}")
         return True

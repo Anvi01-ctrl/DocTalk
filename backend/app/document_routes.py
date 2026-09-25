@@ -12,7 +12,7 @@ import logging
 import uuid
 import mimetypes
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, BackgroundTasks, UploadFile, File, HTTPException
 
 from app.document_models import (
     DocumentMetadata,
@@ -28,6 +28,49 @@ from app import metadata_store
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
+
+
+def _background_index(pages, text, document_id, filename):
+    """
+    Background task: chunk the document text, generate embeddings,
+    and upload to Azure AI Search.
+
+    Runs AFTER the upload HTTP response has been sent, so the user
+    doesn't have to wait for indexing to complete.
+    """
+    try:
+        from app.chunking_service import chunk_text
+        from app.indexing_service import index_chunks
+
+        all_chunks = []
+        if pages:
+            for page_info in pages:
+                page_chunks = chunk_text(
+                    text=page_info.text,
+                    document_id=document_id,
+                    document_name=filename,
+                    page_number=page_info.page_number,
+                )
+                all_chunks.extend(page_chunks)
+        else:
+            all_chunks = chunk_text(
+                text=text,
+                document_id=document_id,
+                document_name=filename,
+                page_number=1,
+            )
+
+        if all_chunks:
+            index_result = index_chunks(all_chunks)
+            logger.info(
+                f"Background-indexed {filename}: "
+                f"{index_result.get('uploaded', 0)} chunks uploaded"
+            )
+    except Exception as index_err:
+        logger.warning(
+            f"Background indexing failed for {filename}: {index_err}. "
+            f"Document uploaded but not searchable via RAG."
+        )
 
 
 # Supported file extensions
@@ -51,6 +94,7 @@ def _get_extension(filename: str) -> str:
 @router.post("/upload", response_model=UploadResponse)
 async def upload_documents(
     files: list[UploadFile] = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
 ):
     """
     Upload one or multiple documents.
@@ -97,17 +141,23 @@ async def upload_documents(
             document_id = str(uuid.uuid4())
             content_type = MIME_TYPES.get(extension, "application/octet-stream")
 
-            # Upload to Blob Storage
-            blob_path = await storage_service.upload_blob(
+            # -----------------------------------------------
+            # Run blob upload and text extraction IN PARALLEL.
+            # These are completely independent operations.
+            # -----------------------------------------------
+            blob_upload_task = storage_service.upload_blob(
                 document_id=document_id,
                 filename=filename,
                 file_bytes=file_bytes,
             )
-
-            # Extract text
-            extraction = await document_service.extract_text(
+            text_extract_task = document_service.extract_text(
                 file_bytes=file_bytes,
                 extension=extension,
+            )
+
+            blob_path, extraction = await asyncio.gather(
+                blob_upload_task,
+                text_extract_task,
             )
 
             text = extraction["text"]
@@ -150,40 +200,17 @@ async def upload_documents(
             metadata_store.save_document(doc)
 
             # -----------------------------------------------
-            # Auto-index into Azure AI Search (best-effort, non-blocking)
+            # Auto-index into Azure AI Search as BACKGROUND TASK.
+            # The upload response returns immediately — indexing
+            # continues in the background.
             # -----------------------------------------------
-            try:
-                from app.chunking_service import chunk_text
-                from app.indexing_service import index_chunks
-
-                all_chunks = []
-                if pages:
-                    for page_info in pages:
-                        page_chunks = chunk_text(
-                            text=page_info.text,
-                            document_id=document_id,
-                            document_name=filename,
-                            page_number=page_info.page_number,
-                        )
-                        all_chunks.extend(page_chunks)
-                else:
-                    all_chunks = chunk_text(
-                        text=text,
-                        document_id=document_id,
-                        document_name=filename,
-                        page_number=1,
-                    )
-
-                if all_chunks:
-                    index_result = index_chunks(all_chunks)
-                    logger.info(
-                        f"Auto-indexed {filename}: "
-                        f"{index_result.get('uploaded', 0)} chunks uploaded"
-                    )
-            except Exception as index_err:
-                logger.warning(
-                    f"Auto-indexing failed for {filename}: {index_err}. "
-                    f"Document uploaded but not searchable via RAG."
+            if background_tasks is not None:
+                background_tasks.add_task(
+                    _background_index,
+                    pages=pages,
+                    text=text,
+                    document_id=document_id,
+                    filename=filename,
                 )
 
             logger.info(
@@ -281,6 +308,56 @@ async def get_document(document_id: str):
         )
 
     return doc
+
+
+@router.delete("/all/bulk")
+async def delete_all_documents():
+    """
+    Delete ALL documents — blobs, search index chunks, and metadata.
+    Used to free up Azure Search quota quickly.
+    """
+    all_docs = metadata_store.get_all_documents()
+    deleted_count = 0
+    errors = []
+
+    for doc in all_docs:
+        try:
+            # Delete blob
+            try:
+                await storage_service.delete_blob(doc.blob_path)
+            except Exception:
+                pass
+
+            # Delete search chunks
+            try:
+                from app.search_service import delete_document_chunks
+                delete_document_chunks(doc.document_id)
+            except Exception:
+                pass
+
+            # Delete metadata
+            metadata_store.delete_document(doc.document_id)
+            deleted_count += 1
+        except Exception as e:
+            errors.append(f"{doc.filename}: {str(e)}")
+            logger.error(f"Failed to delete {doc.document_id}: {e}")
+
+    # Purge and recreate the entire search index to free all quota
+    # (individual chunk deletes may leave orphaned data)
+    try:
+        from app.search_service import purge_search_index
+        purge_search_index()
+        logger.info("Search index purged and recreated successfully")
+    except Exception as e:
+        logger.error(f"Failed to purge search index: {e}")
+        errors.append(f"Index purge: {str(e)}")
+
+    return {
+        "message": f"Deleted {deleted_count} of {len(all_docs)} documents. Search index purged.",
+        "deleted": deleted_count,
+        "total": len(all_docs),
+        "errors": errors,
+    }
 
 
 @router.delete("/{document_id}")

@@ -12,7 +12,9 @@ Falls back to pypdf if Document Intelligence is unavailable.
 import os
 import io
 import logging
+import asyncio
 from typing import Optional
+from functools import lru_cache
 
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -34,11 +36,22 @@ logger = logging.getLogger(__name__)
 DOC_INTELLIGENCE_ENDPOINT = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
 DOC_INTELLIGENCE_KEY = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
 
+# Cache the Document Intelligence client as a singleton
+_doc_intelligence_client = None
+_doc_intelligence_checked = False
+
 def _get_doc_intelligence_client() -> Optional[DocumentIntelligenceClient]:
     """
-    Create a Document Intelligence client.
+    Create a Document Intelligence client (cached singleton).
     Returns None if the endpoint is not configured.
     """
+    global _doc_intelligence_client, _doc_intelligence_checked
+
+    if _doc_intelligence_checked:
+        return _doc_intelligence_client
+
+    _doc_intelligence_checked = True
+
     if not DOC_INTELLIGENCE_ENDPOINT or not DOC_INTELLIGENCE_KEY:
         logger.warning(
             "AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT or KEY not set. "
@@ -48,11 +61,11 @@ def _get_doc_intelligence_client() -> Optional[DocumentIntelligenceClient]:
 
     try:
         credential = AzureKeyCredential(DOC_INTELLIGENCE_KEY)
-        client = DocumentIntelligenceClient(
+        _doc_intelligence_client = DocumentIntelligenceClient(
             endpoint=DOC_INTELLIGENCE_ENDPOINT,
             credential=credential,
         )
-        return client
+        return _doc_intelligence_client
 
     except Exception as error:
         logger.warning(
@@ -82,14 +95,15 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
         return await process_pdf_with_pypdf(file_bytes)
 
     try:
-        poller = client.begin_analyze_document(
-            model_id="prebuilt-layout",
-            body=AnalyzeDocumentRequest(
-                bytes_source=file_bytes,
-            ),
+        # Run the synchronous Document Intelligence call in a thread
+        # to avoid blocking the event loop
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            None,
+            _run_doc_intelligence_sync,
+            client,
+            file_bytes,
         )
-
-        result = poller.result()
 
         # Build a set of table spans so we can mark table content
         table_texts_by_page = {}
@@ -158,12 +172,19 @@ async def process_pdf_with_intelligence(file_bytes: bytes) -> tuple[list[PageInf
         return await process_pdf_with_pypdf(file_bytes)
 
 
-async def process_pdf_with_pypdf(file_bytes: bytes) -> tuple[list[PageInfo], int]:
-    """
-    Fallback PDF extraction using pypdf.
+def _run_doc_intelligence_sync(client, file_bytes: bytes):
+    """Synchronous Document Intelligence call — run in executor."""
+    poller = client.begin_analyze_document(
+        model_id="prebuilt-layout",
+        body=AnalyzeDocumentRequest(
+            bytes_source=file_bytes,
+        ),
+    )
+    return poller.result()
 
-    Preserves page information but does not support OCR.
-    """
+
+def _extract_pdf_pypdf_sync(file_bytes: bytes) -> tuple[list[PageInfo], int]:
+    """Synchronous pypdf extraction — run in executor."""
     pdf_file = io.BytesIO(file_bytes)
     reader = PdfReader(pdf_file)
 
@@ -184,24 +205,56 @@ async def process_pdf_with_pypdf(file_bytes: bytes) -> tuple[list[PageInfo], int
     return pages, page_count
 
 
-async def process_docx(file_bytes: bytes) -> tuple[Optional[list[PageInfo]], Optional[int]]:
+async def process_pdf_with_pypdf(file_bytes: bytes) -> tuple[list[PageInfo], int]:
     """
-    Extract text from a DOCX file using python-docx.
+    Fallback PDF extraction using pypdf.
 
-    DOCX files do not have true page numbers, so pages is None
-    and page_count is None.
+    Preserves page information but does not support OCR.
+    Runs synchronous pypdf in a thread to avoid blocking.
+    """
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(
+        None,
+        _extract_pdf_pypdf_sync,
+        file_bytes,
+    )
+
+
+def _extract_docx_sync(file_bytes: bytes) -> tuple[list[str], str]:
+    """
+    Synchronous DOCX extraction — run in executor.
+    Returns (paragraph_list, full_text) in one parse.
     """
     docx_file = io.BytesIO(file_bytes)
     document = DocxDocument(docx_file)
 
     paragraphs = []
-
     for paragraph in document.paragraphs:
         if paragraph.text.strip():
             paragraphs.append(paragraph.text)
 
+    full_text = "\n".join(paragraphs)
+    return paragraphs, full_text
+
+
+async def process_docx(file_bytes: bytes) -> tuple[Optional[list[PageInfo]], Optional[int], str]:
+    """
+    Extract text from a DOCX file using python-docx.
+
+    DOCX files do not have true page numbers, so pages is None
+    and page_count is None.
+
+    Returns (pages, page_count, full_text) — text is extracted in one pass.
+    """
+    loop = asyncio.get_event_loop()
+    paragraphs, full_text = await loop.run_in_executor(
+        None,
+        _extract_docx_sync,
+        file_bytes,
+    )
+
     # No true pages in DOCX — return None for pages/page_count
-    return None, None
+    return None, None, full_text
 
 
 async def process_txt(file_bytes: bytes) -> tuple[Optional[list[PageInfo]], Optional[int]]:
@@ -241,15 +294,8 @@ async def extract_text(
         }
 
     elif extension == "docx":
-        pages, page_count = await process_docx(file_bytes)
-
-        # Extract all paragraph text
-        docx_file = io.BytesIO(file_bytes)
-        document = DocxDocument(docx_file)
-
-        full_text = "\n".join(
-            p.text for p in document.paragraphs if p.text.strip()
-        )
+        # Single parse — no more double-parsing
+        pages, page_count, full_text = await process_docx(file_bytes)
 
         return {
             "text": full_text,

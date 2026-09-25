@@ -129,11 +129,16 @@ function renderMyDocuments(docs) {
 
         // Delete button
         var delBtn = document.createElement("button");
+        delBtn.type = "button";
         delBtn.className = "my-doc-delete";
         delBtn.textContent = "\uD83D\uDDD1";
         delBtn.title = "Delete permanently";
         delBtn.addEventListener("click", (function(docId, filename) {
-            return function() { confirmDeleteDocument(docId, filename); };
+            return function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                confirmDeleteDocument(docId, filename);
+            };
         })(doc.document_id, doc.filename));
 
         card.appendChild(delBtn);
@@ -146,8 +151,63 @@ function renderMyDocuments(docs) {
    DELETE DOCUMENT
    ========================================================= */
 
+/**
+ * Show a custom confirmation modal (replaces native confirm()).
+ * Returns a Promise that resolves true/false.
+ */
+function _showDeleteModal(filename) {
+    return new Promise(function(resolve) {
+        // Remove any existing modal
+        var old = document.getElementById("delete-confirm-modal");
+        if (old) old.remove();
+
+        var overlay = document.createElement("div");
+        overlay.id = "delete-confirm-modal";
+        overlay.className = "delete-modal-overlay";
+
+        var modal = document.createElement("div");
+        modal.className = "delete-modal-card";
+
+        modal.innerHTML =
+            '<div class="delete-modal-icon">' +
+                '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>' +
+                    '<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+                    '<line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>' +
+                '</svg>' +
+            '</div>' +
+            '<h3 class="delete-modal-title">Delete Document</h3>' +
+            '<p class="delete-modal-text">Are you sure you want to permanently delete <strong>' + escapeHtml(filename) + '</strong>?</p>' +
+            '<p class="delete-modal-sub">This will remove it from Azure Storage and the search index. This cannot be undone.</p>' +
+            '<div class="delete-modal-actions">' +
+                '<button type="button" class="delete-modal-btn cancel" id="delete-modal-cancel">Cancel</button>' +
+                '<button type="button" class="delete-modal-btn confirm" id="delete-modal-confirm">Delete</button>' +
+            '</div>';
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Animate in
+        requestAnimationFrame(function() {
+            overlay.classList.add("visible");
+        });
+
+        function close(result) {
+            overlay.classList.remove("visible");
+            setTimeout(function() { overlay.remove(); }, 200);
+            resolve(result);
+        }
+
+        document.getElementById("delete-modal-cancel").addEventListener("click", function() { close(false); });
+        document.getElementById("delete-modal-confirm").addEventListener("click", function() { close(true); });
+        overlay.addEventListener("click", function(e) {
+            if (e.target === overlay) close(false);
+        });
+    });
+}
+
 async function confirmDeleteDocument(docId, filename) {
-    var confirmed = confirm("Permanently delete \"" + filename + "\"?\n\nThis will remove the document from Azure Storage and the search index. This cannot be undone.");
+    var confirmed = await _showDeleteModal(filename);
     if (!confirmed) return;
 
     try {
@@ -174,10 +234,109 @@ async function confirmDeleteDocument(docId, filename) {
 
     } catch (e) {
         console.error("Delete failed:", e);
-        alert("Failed to delete document: " + e.message);
+        setStatus("Failed to delete: " + e.message);
     }
 }
 
+
+/* =========================================================
+   DELETE ALL DOCUMENTS
+   ========================================================= */
+
+function _showDeleteAllModal(docCount) {
+    return new Promise(function(resolve) {
+        var old = document.getElementById("delete-confirm-modal");
+        if (old) old.remove();
+
+        var overlay = document.createElement("div");
+        overlay.id = "delete-confirm-modal";
+        overlay.className = "delete-modal-overlay";
+
+        var modal = document.createElement("div");
+        modal.className = "delete-modal-card";
+
+        modal.innerHTML =
+            '<div class="delete-modal-icon">' +
+                '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>' +
+                    '<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+                '</svg>' +
+            '</div>' +
+            '<h3 class="delete-modal-title">Delete All Documents</h3>' +
+            '<p class="delete-modal-text">This will permanently delete all <strong>' + docCount + ' documents</strong> from Azure Storage and the search index.</p>' +
+            '<p class="delete-modal-sub">This action cannot be undone. Your search quota will be freed up.</p>' +
+            '<div class="delete-modal-actions">' +
+                '<button type="button" class="delete-modal-btn cancel" id="delete-modal-cancel">Cancel</button>' +
+                '<button type="button" class="delete-modal-btn confirm" id="delete-modal-confirm">Delete All</button>' +
+            '</div>';
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        requestAnimationFrame(function() {
+            overlay.classList.add("visible");
+        });
+
+        function close(result) {
+            overlay.classList.remove("visible");
+            setTimeout(function() { overlay.remove(); }, 200);
+            resolve(result);
+        }
+
+        document.getElementById("delete-modal-cancel").addEventListener("click", function() { close(false); });
+        document.getElementById("delete-modal-confirm").addEventListener("click", function() { close(true); });
+        overlay.addEventListener("click", function(e) {
+            if (e.target === overlay) close(false);
+        });
+    });
+}
+
+async function confirmDeleteAllDocuments() {
+    // Get current count
+    var countEl = document.getElementById("my-documents-count");
+    var countText = countEl ? countEl.textContent : "all";
+    var docCount = parseInt(countText) || "all";
+
+    var confirmed = await _showDeleteAllModal(docCount);
+    if (!confirmed) return;
+
+    var btn = document.getElementById("delete-all-docs-btn");
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Deleting...";
+    }
+
+    try {
+        var response = await fetch(API_URL + "/documents/all/bulk", {
+            method: "DELETE"
+        });
+
+        if (!response.ok) {
+            throw new Error("Bulk delete failed (" + response.status + ")");
+        }
+
+        var data = await response.json();
+
+        // Clear local state
+        selectedDocumentIds.clear();
+        uploadedDocuments = [];
+
+        renderDocuments();
+        updateCompareButton();
+        loadMyDocuments();
+
+        setStatus(data.message || "All documents deleted.");
+
+    } catch (e) {
+        console.error("Bulk delete failed:", e);
+        setStatus("Failed to delete all: " + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px;">delete_sweep</span> Delete All';
+        }
+    }
+}
 
 /* =========================================================
    COMPARE BUTTON STATE
@@ -205,21 +364,42 @@ document.addEventListener("DOMContentLoaded", function() {
             var files = Array.from(libUpload.files);
             if (!files.length) return;
 
-            setStatus("Uploading " + files.length + " file" + (files.length > 1 ? "s" : "") + "\u2026");
+            setStatus("");
+
+            // Show progress (reuse inline progress if available)
+            if (typeof _showUploadProgress === "function") {
+                _showUploadProgress(files);
+            }
 
             for (var i = 0; i < files.length; i++) {
                 try {
-                    var doc = await uploadFile(files[i]);
+                    var doc = await uploadFileWithProgress(files[i], (function(idx) {
+                        return function(phase, percent, loadedBytes) {
+                            if (typeof _updateUploadProgress === "function") {
+                                _updateUploadProgress(idx, phase, percent, loadedBytes);
+                            }
+                        };
+                    })(i));
+
                     uploadedDocuments.push(doc);
                     if (doc.id) selectedDocumentIds.add(doc.id);
                 } catch (e) {
+                    if (typeof _updateUploadProgress === "function") {
+                        _updateUploadProgress(i, "error", 0, 0);
+                    }
                     alert("Failed to upload " + files[i].name + ": " + e.message);
                 }
             }
 
             renderDocuments();
             loadMyDocuments();
-            setStatus("Upload complete.");
+            setStatus("");
+
+            // Fade out progress
+            if (typeof _clearUploadProgress === "function") {
+                setTimeout(_clearUploadProgress, 2000);
+            }
+
             libUpload.value = "";
         });
     }

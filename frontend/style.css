@@ -1077,7 +1077,245 @@ button {
     box-shadow: none;
 }
 
-/* Upload progress */
+.danger-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: rgba(244, 63, 94, 0.15);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: var(--radius-sm);
+    color: #fb7185;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.danger-button:hover:not(:disabled) {
+    background: rgba(244, 63, 94, 0.25);
+    border-color: rgba(244, 63, 94, 0.5);
+    color: #f43f5e;
+    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.2);
+    transform: translateY(-1px);
+}
+
+.danger-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== Upload Progress Popup ===== */
+.upload-popup {
+    display: none;
+    max-width: 384px;
+    margin-left: 8px;
+    margin-bottom: -1px;
+    z-index: 10;
+}
+
+.upload-popup.upload-popup-visible {
+    display: block;
+    animation: popupSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.upload-popup.upload-popup-hiding {
+    display: block;
+    animation: popupSlideOut 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes popupSlideIn {
+    0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes popupSlideOut {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(16px) scale(0.96); }
+}
+
+/* ---- Individual file card ---- */
+.upl-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.upl-card + .upl-card { margin-top: 6px; }
+
+/* Inner row: icon | body | X */
+.upl-card-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    background: rgba(11, 18, 34, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid #1e2e4a;
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -12px 32px rgba(0,0,0,0.65);
+    transition: border-color 0.2s ease;
+}
+
+.upl-inner-complete { border-color: rgba(16, 185, 129, 0.45); }
+.upl-inner-error    { border-color: rgba(244, 63, 94, 0.45); }
+
+/* Icon */
+.upl-card-icon {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #16223b;
+    border: 1px solid #273a5f;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+    color: #38bdf8;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.upl-card-icon-done {
+    color: #34d399;
+}
+
+.upl-card-icon-error {
+    color: #fb7185;
+}
+
+/* Body */
+.upl-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Header: filename + pct */
+.upl-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.upl-card-filename {
+    font-size: 13px;
+    font-weight: 500;
+    color: #f1f5f9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.02em;
+}
+
+.upl-card-pct {
+    font-size: 11px;
+    font-weight: 500;
+    color: #94a3b8;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+
+.upl-pct-done { color: #34d399; font-weight: 600; }
+.upl-pct-error { color: #fb7185; }
+
+/* Progress track */
+.upl-card-track {
+    width: 100%;
+    height: 6px;
+    background: #182642;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+/* Progress fill */
+.upl-card-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #38bdf8, #67e8f9);
+    transition: width 0.15s ease-out;
+}
+
+.upl-card-fill.upl-card-processing {
+    background: linear-gradient(90deg, #3b82f6, #38bdf8, #06b6d4, #3b82f6);
+    background-size: 200% 100%;
+    animation: uplPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes uplPulse {
+    0%   { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+}
+
+.upl-card-fill.upl-card-done {
+    background: #34d399;
+}
+
+.upl-card-fill.upl-card-error {
+    background: #f43f5e;
+}
+
+/* Meta: bytes + status */
+.upl-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    font-size: 10px;
+    color: #94a3b8;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+}
+
+.upl-card-size { font-variant-numeric: tabular-nums; }
+
+/* Dismiss X */
+.upl-card-dismiss {
+    background: transparent;
+    border: none;
+    padding: 4px;
+    color: #94a3b8;
+    border-radius: 9999px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.upl-card-dismiss:hover {
+    color: #f1f5f9;
+    background: rgba(30, 41, 59, 0.8);
+}
+
+/* Bottom glow connector */
+.upl-card-glow {
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.4), transparent);
+    transition: background 0.3s ease;
+}
+
+.upl-glow-complete {
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+}
+
+.upl-glow-error {
+    background: linear-gradient(90deg, transparent, rgba(244, 63, 94, 0.4), transparent);
+}
+
+
+
+
+
+/* Sidebar progress (kept for compat, not used for popup) */
 .document-upload-progress {
     font-size: 11px;
     color: var(--accent);
@@ -1562,6 +1800,8 @@ button {
     cursor: pointer;
     transition: var(--transition);
     flex-shrink: 0;
+    position: relative;
+    z-index: 2;
 }
 
 .my-doc-delete:hover {
@@ -1570,6 +1810,123 @@ button {
     color: var(--danger);
 }
 
+
+/* ==========================================================
+   DELETE CONFIRMATION MODAL
+   ========================================================== */
+
+.delete-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.delete-modal-overlay.visible {
+    opacity: 1;
+}
+
+.delete-modal-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 28px 32px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.delete-modal-overlay.visible .delete-modal-card {
+    transform: scale(1) translateY(0);
+}
+
+.delete-modal-icon {
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(244, 63, 94, 0.1);
+    border: 1px solid rgba(244, 63, 94, 0.2);
+}
+
+.delete-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 8px;
+    font-family: 'Space Grotesk', sans-serif;
+}
+
+.delete-modal-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 4px;
+    line-height: 1.5;
+}
+
+.delete-modal-text strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.delete-modal-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0 0 24px;
+}
+
+.delete-modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.delete-modal-btn {
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+}
+
+.delete-modal-btn.cancel {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.delete-modal-btn.cancel:hover {
+    background: var(--surface-elevated);
+    border-color: var(--border-strong);
+    color: var(--text);
+}
+
+.delete-modal-btn.confirm {
+    background: #f43f5e;
+    color: white;
+    box-shadow: 0 4px 16px rgba(244, 63, 94, 0.3);
+}
+
+.delete-modal-btn.confirm:hover {
+    background: #e11d48;
+    box-shadow: 0 4px 20px rgba(244, 63, 94, 0.45);
+}
 
 /* ==========================================================
    INPUT SECTION
@@ -1595,6 +1952,7 @@ button {
     transition: all 0.3s ease;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
 }
+
 
 .input-wrapper:focus-within {
     border-color: rgba(99, 102, 241, 0.5);

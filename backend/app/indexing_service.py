@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 
 from azure.search.documents import SearchClient
 
@@ -30,7 +31,10 @@ def index_chunks(chunks: list[dict]) -> dict:
     logger.info(f"Generating embeddings for {len(texts)} chunks in batch...")
 
     # Single batch call instead of N individual calls
+    t0 = time.perf_counter()
     embeddings = generate_embeddings_batch(texts)
+    t1 = time.perf_counter()
+    logger.info(f"Embeddings generated in {t1 - t0:.2f}s")
 
     documents = []
     for chunk, embedding in zip(chunks, embeddings):
@@ -44,7 +48,10 @@ def index_chunks(chunks: list[dict]) -> dict:
         }
         documents.append(document)
 
+    t2 = time.perf_counter()
     results = search_client.upload_documents(documents=documents)
+    t3 = time.perf_counter()
+    logger.info(f"Search index upload completed in {t3 - t2:.2f}s")
 
     successful = sum(
         1 for result in results if result.succeeded

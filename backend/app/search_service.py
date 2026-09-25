@@ -27,21 +27,35 @@ INDEX_NAME = os.getenv(
 
 EMBEDDING_DIMENSIONS = 1536
 
+# Cached singleton clients — avoids re-creating connections on every call
+_credential = None
+_index_client = None
+_search_client = None
+
 def get_credential():
-    return DefaultAzureCredential()
+    global _credential
+    if _credential is None:
+        _credential = DefaultAzureCredential()
+    return _credential
 
 def get_index_client() -> SearchIndexClient:
-    return SearchIndexClient(
-        endpoint=SEARCH_ENDPOINT,
-        credential=get_credential(),
-    )
+    global _index_client
+    if _index_client is None:
+        _index_client = SearchIndexClient(
+            endpoint=SEARCH_ENDPOINT,
+            credential=get_credential(),
+        )
+    return _index_client
 
 def get_search_client() -> SearchClient:
-    return SearchClient(
-        endpoint=SEARCH_ENDPOINT,
-        index_name=INDEX_NAME,
-        credential=get_credential(),
-    )
+    global _search_client
+    if _search_client is None:
+        _search_client = SearchClient(
+            endpoint=SEARCH_ENDPOINT,
+            index_name=INDEX_NAME,
+            credential=get_credential(),
+        )
+    return _search_client
 
 def create_search_index() -> SearchIndex:
     index_client = get_index_client()
@@ -94,6 +108,27 @@ def create_search_index() -> SearchIndex:
     )
 
     return index_client.create_or_update_index(index)
+
+
+def purge_search_index():
+    """
+    Delete and recreate the entire search index to free all quota.
+    This is the nuclear option when individual chunk deletes don't free enough space.
+    """
+    global _search_client
+    index_client = get_index_client()
+
+    # Delete the index entirely
+    try:
+        index_client.delete_index(INDEX_NAME)
+    except Exception:
+        pass  # Index might not exist
+
+    # Reset cached search client so it reconnects to the new index
+    _search_client = None
+
+    # Recreate empty index
+    return create_search_index()
 
 def keyword_search(query: str, top: int = 5, document_ids: list[str] = None):
     client = get_search_client()

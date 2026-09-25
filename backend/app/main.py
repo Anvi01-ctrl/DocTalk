@@ -314,8 +314,46 @@ def index_document(document_id: str):
 # documents belong to the current session.
 # ---------------------------------------------------------
 
+from fastapi import BackgroundTasks
+
+def _background_index_legacy(document_pages, document_id, filename):
+    """
+    Background task: chunk, embed, and index a document.
+    Runs AFTER the upload HTTP response is sent.
+    """
+    try:
+        # Reset cached search client to ensure fresh connection
+        import app.search_service as _ss
+        _ss._search_client = None
+
+        all_chunks = []
+        for i, page_text in enumerate(document_pages):
+            page_chunks = chunk_text(
+                text=page_text,
+                document_id=document_id,
+                document_name=filename,
+                page_number=i + 1,
+            )
+            all_chunks.extend(page_chunks)
+
+        if all_chunks:
+            index_result = index_chunks(all_chunks)
+            logger.info(
+                f"Auto-indexed {filename}: "
+                f"{index_result.get('uploaded', 0)} chunks uploaded"
+            )
+    except Exception as index_err:
+        logger.warning(
+            f"Auto-indexing failed for {filename}: {index_err}. "
+            f"Document uploaded but not searchable via RAG."
+        )
+
+
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
+):
 
     filename = file.filename or ""
     extension = filename.lower().split(".")[-1]
@@ -338,63 +376,24 @@ async def upload_document(file: UploadFile = File(...)):
     try:
 
         # -------------------------------------------------
-        # TXT
+        # Use the shared document_service for text extraction.
+        # This supports Document Intelligence for PDFs (OCR,
+        # tables, layout) instead of only pypdf.
         # -------------------------------------------------
+        from app import document_service as doc_svc
 
-        if extension == "txt":
+        extraction = await doc_svc.extract_text(
+            file_bytes=file_bytes,
+            extension=extension,
+        )
 
-            text = file_bytes.decode(
-                "utf-8",
-                errors="ignore"
-            )
+        text = extraction["text"]
+        pages_info_list = extraction["pages"]  # list[PageInfo] or None
 
-            # TXT is treated as one page.
-            document_pages = [text]
-
-
-        # -------------------------------------------------
-        # PDF
-        # -------------------------------------------------
-
-        elif extension == "pdf":
-
-            pdf_file = io.BytesIO(file_bytes)
-
-            reader = PdfReader(pdf_file)
-
-            document_pages = []
-
-            # Keep every PDF page separately.
-            for page in reader.pages:
-
-                page_text = page.extract_text() or ""
-
-                document_pages.append(page_text)
-
-            # Keep combined text for compatibility
-            # with the existing backend.
-            text = "\n\n".join(document_pages)
-
-
-        # -------------------------------------------------
-        # DOCX
-        # -------------------------------------------------
-
+        # Build legacy document_pages list for backward compat
+        if pages_info_list:
+            document_pages = [p.text for p in pages_info_list]
         else:
-
-            docx_file = io.BytesIO(file_bytes)
-
-            document = Document(docx_file)
-
-            paragraphs = []
-
-            for paragraph in document.paragraphs:
-
-                paragraphs.append(paragraph.text)
-
-            text = "\n".join(paragraphs)
-
-            # DOCX is currently treated as one page.
             document_pages = [text]
 
 
@@ -433,10 +432,11 @@ async def upload_document(file: UploadFile = File(...)):
         from app.document_models import DocumentMetadata, PageInfo
         from app import metadata_store
 
-        pages_info = [
-            PageInfo(page_number=i + 1, text=p)
-            for i, p in enumerate(document_pages)
-        ]
+        if not pages_info_list:
+            pages_info_list = [
+                PageInfo(page_number=i + 1, text=p)
+                for i, p in enumerate(document_pages)
+            ]
 
         doc_meta = DocumentMetadata(
             document_id=document_id,
@@ -451,7 +451,7 @@ async def upload_document(file: UploadFile = File(...)):
             status="processed",
             page_count=len(document_pages),
             character_count=len(text),
-            pages=pages_info,
+            pages=pages_info_list,
         )
 
         metadata_store.save_document(doc_meta)
@@ -462,30 +462,15 @@ async def upload_document(file: UploadFile = File(...)):
         )
 
         # -------------------------------------------------
-        # Auto-index into Azure AI Search for RAG
+        # Auto-index into Azure AI Search as BACKGROUND TASK.
+        # The upload response returns immediately.
         # -------------------------------------------------
-        try:
-            all_chunks = []
-            for i, page_text in enumerate(document_pages):
-                page_chunks = chunk_text(
-                    text=page_text,
-                    document_id=document_id,
-                    document_name=filename,
-                    page_number=i + 1,
-                )
-                all_chunks.extend(page_chunks)
-
-            if all_chunks:
-                index_result = index_chunks(all_chunks)
-                logger.info(
-                    f"Auto-indexed {filename}: "
-                    f"{index_result.get('uploaded', 0)} chunks uploaded"
-                )
-        except Exception as index_err:
-            logger.warning(
-                f"Auto-indexing failed for {filename}: {index_err}. "
-                f"Document uploaded but not searchable via RAG."
-            )
+        background_tasks.add_task(
+            _background_index_legacy,
+            document_pages,
+            document_id,
+            filename,
+        )
 
 
         # -------------------------------------------------
@@ -513,6 +498,7 @@ async def upload_document(file: UploadFile = File(...)):
             status_code=500,
             detail=f"Could not read the document: {str(error)}"
         )
+
 
 
 # ---------------------------------------------------------

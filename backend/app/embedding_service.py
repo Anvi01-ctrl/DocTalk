@@ -80,15 +80,21 @@ def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
 
     valid_indices, valid_texts = zip(*valid)
 
-    # Send all texts in one batch (API supports up to ~2048 inputs)
-    BATCH_SIZE = 100
+    # OpenAI supports up to 2048 inputs per batch.
+    # Using a larger batch size dramatically reduces the number
+    # of API round-trips for large documents.
+    BATCH_SIZE = 2048
     all_embeddings = [None] * len(texts)
+
+    # Create ONE client for the entire batch run instead of
+    # creating a new client (+ token fetch) per batch iteration.
+    client = get_openai_client()
 
     for batch_start in range(0, len(valid_texts), BATCH_SIZE):
         batch_texts = list(valid_texts[batch_start:batch_start + BATCH_SIZE])
         batch_indices = list(valid_indices[batch_start:batch_start + BATCH_SIZE])
 
-        response = get_openai_client().embeddings.create(
+        response = client.embeddings.create(
             input=batch_texts,
             model=EMBEDDING_MODEL,
             dimensions=EMBEDDING_DIMENSIONS,

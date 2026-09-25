@@ -451,35 +451,217 @@ function renderDocuments() {
    UPLOAD DOCUMENT
 ========================= */
 
+/**
+ * Upload a single file with two-phase progress:
+ *   Phase 1: Uploading bytes (real XHR progress)
+ *   Phase 2: Processing on server (indeterminate pulse)
+ *
+ * @param {File}     file         The file to upload.
+ * @param {Function} onPhase      Callback: onPhase(phase, percent, loadedBytes)
+ *                                phase = "uploading" | "processing" | "done" | "error"
+ * @returns {Promise<object>}     Resolves with the server response JSON.
+ */
+function uploadFileWithProgress(file, onPhase) {
+    return new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        var form = new FormData();
+        form.append("file", file);
+
+        var uploadDone = false;
+
+        // Phase 1: Track upload bytes
+        xhr.upload.addEventListener("progress", function(e) {
+            if (e.lengthComputable && onPhase) {
+                var percent = Math.round((e.loaded / e.total) * 100);
+                onPhase("uploading", percent, e.loaded);
+            }
+        });
+
+        // Upload bytes finished → switch to processing phase
+        xhr.upload.addEventListener("load", function() {
+            uploadDone = true;
+            if (onPhase) onPhase("processing", 100, file.size);
+        });
+
+        // Server responded
+        xhr.addEventListener("load", function() {
+            var data;
+            try { data = JSON.parse(xhr.responseText); }
+            catch(e) { data = {}; }
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+                if (data.document_id) data.id = data.document_id;
+                if (onPhase) onPhase("done", 100, file.size);
+                resolve(data);
+            } else {
+                if (onPhase) onPhase("error", 0, 0);
+                reject(new Error(data.detail || "Upload failed (" + xhr.status + ")"));
+            }
+        });
+
+        xhr.addEventListener("error", function() {
+            if (onPhase) onPhase("error", 0, 0);
+            reject(new Error("Network error during upload"));
+        });
+
+        xhr.addEventListener("abort", function() {
+            if (onPhase) onPhase("error", 0, 0);
+            reject(new Error("Upload aborted"));
+        });
+
+        if (onPhase) onPhase("uploading", 0, 0);
+        xhr.open("POST", API_URL + "/upload");
+        xhr.send(form);
+    });
+}
+
+// Keep the simple version for backward compatibility
 async function uploadFile(file) {
+    return uploadFileWithProgress(file, null);
+}
 
-    var form = new FormData();
-    form.append("file", file);
+/**
+ * Format file size in human-readable form.
+ */
+function _formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return "0 Bytes";
+    var k = 1024;
+    var sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    var i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+}
 
-    var response = await fetch(
-        API_URL + "/upload",
-        {
-            method: "POST",
-            body: form
+/* SVG icons for the upload card */
+var _uplIcons = {
+    file: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    check: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    error: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+};
+
+/**
+ * Show the docked upload progress popup above the input area.
+ * Design matches the React DockedUploadProgress component.
+ */
+function _showUploadProgress(files) {
+    var popup = document.getElementById("upload-popup");
+    if (!popup) return null;
+
+    var html = '';
+    for (var i = 0; i < files.length; i++) {
+        var name = files[i].name;
+        var dispName = name.length > 32 ? name.substring(0, 30) + "…" : name;
+        var size = files[i].size || 0;
+
+        html += '<div class="upl-card" id="upl-row-' + i + '">' +
+            /* Inner card container */
+            '<div class="upl-card-inner" id="upl-inner-' + i + '">' +
+                /* Status/File icon */
+                '<div class="upl-card-icon" id="upl-icon-' + i + '">' +
+                    _uplIcons.file +
+                '</div>' +
+                /* Body: filename, bar, meta */
+                '<div class="upl-card-body">' +
+                    /* Header: filename + percent */
+                    '<div class="upl-card-header">' +
+                        '<span class="upl-card-filename" title="' + escapeHtml(name) + '">' + escapeHtml(dispName) + '</span>' +
+                        '<span class="upl-card-pct" id="upl-pct-' + i + '">0%</span>' +
+                    '</div>' +
+                    /* Progress bar */
+                    '<div class="upl-card-track">' +
+                        '<div class="upl-card-fill" id="upl-fill-' + i + '"></div>' +
+                    '</div>' +
+                    /* Meta: size + status text */
+                    '<div class="upl-card-meta">' +
+                        '<span class="upl-card-size" id="upl-size-' + i + '" data-total="' + size + '">0 Bytes / ' + _formatFileSize(size) + '</span>' +
+                        '<span class="upl-card-status" id="upl-status-' + i + '">Uploading to DocTalk...</span>' +
+                    '</div>' +
+                '</div>' +
+                /* X dismiss button */
+                '<button class="upl-card-dismiss" type="button" aria-label="Cancel upload" title="Cancel upload">' +
+                    _uplIcons.x +
+                '</button>' +
+            '</div>' +
+            /* Decorative bottom glow connector */
+            '<div class="upl-card-glow" id="upl-glow-' + i + '"></div>' +
+        '</div>';
+    }
+
+    popup.innerHTML = html;
+    popup.classList.add("upload-popup-visible");
+
+    // Wire up dismiss buttons
+    popup.querySelectorAll(".upl-card-dismiss").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+            _clearUploadProgress();
+        });
+    });
+
+    return popup;
+}
+
+function _updateUploadProgress(idx, phase, percent, loadedBytes) {
+    var fill = document.getElementById("upl-fill-" + idx);
+    var pct = document.getElementById("upl-pct-" + idx);
+    var sizeEl = document.getElementById("upl-size-" + idx);
+    var statusEl = document.getElementById("upl-status-" + idx);
+    var iconEl = document.getElementById("upl-icon-" + idx);
+    var innerEl = document.getElementById("upl-inner-" + idx);
+    var glowEl = document.getElementById("upl-glow-" + idx);
+    var row = document.getElementById("upl-row-" + idx);
+    if (!fill || !row) return;
+
+    var totalSize = sizeEl ? parseInt(sizeEl.dataset.total || "0", 10) : 0;
+    var uploaded = loadedBytes || 0;
+
+    if (phase === "uploading") {
+        fill.style.width = percent + "%";
+        fill.className = "upl-card-fill";
+        if (pct) pct.textContent = percent + "%";
+        if (sizeEl) sizeEl.textContent = _formatFileSize(uploaded) + " of " + _formatFileSize(totalSize);
+        if (statusEl) statusEl.textContent = "Uploading to DocTalk...";
+    } else if (phase === "processing") {
+        fill.style.width = "100%";
+        fill.className = "upl-card-fill upl-card-processing";
+        if (pct) pct.textContent = "Processing…";
+        if (sizeEl) sizeEl.textContent = _formatFileSize(totalSize);
+        if (statusEl) statusEl.textContent = "Processing document...";
+    } else if (phase === "done") {
+        fill.style.width = "100%";
+        fill.className = "upl-card-fill upl-card-done";
+        if (pct) { pct.textContent = "Ready"; pct.classList.add("upl-pct-done"); }
+        if (sizeEl) sizeEl.textContent = _formatFileSize(totalSize);
+        if (statusEl) statusEl.textContent = "Upload complete";
+        if (innerEl) innerEl.classList.add("upl-inner-complete");
+        if (glowEl) glowEl.classList.add("upl-glow-complete");
+        // Swap icon to checkmark
+        if (iconEl) {
+            iconEl.innerHTML = _uplIcons.check;
+            iconEl.classList.add("upl-card-icon-done");
         }
-    );
-
-    var data =
-        await response.json().catch(function() { return {}; });
-
-    if (!response.ok) {
-        throw new Error(
-            data.detail ||
-            "Upload failed (" + response.status + ")"
-        );
+    } else if (phase === "error") {
+        fill.className = "upl-card-fill upl-card-error";
+        fill.style.width = "100%";
+        if (pct) { pct.textContent = "Failed"; pct.classList.add("upl-pct-error"); }
+        if (statusEl) statusEl.textContent = "Upload failed";
+        if (innerEl) innerEl.classList.add("upl-inner-error");
+        if (glowEl) glowEl.classList.add("upl-glow-error");
+        if (iconEl) {
+            iconEl.innerHTML = _uplIcons.error;
+            iconEl.classList.add("upl-card-icon-error");
+        }
     }
+}
 
-    // Store the document_id
-    if (data.document_id) {
-        data.id = data.document_id;
-    }
-
-    return data;
+function _clearUploadProgress() {
+    var popup = document.getElementById("upload-popup");
+    if (!popup) return;
+    popup.classList.remove("upload-popup-visible");
+    popup.classList.add("upload-popup-hiding");
+    setTimeout(function() {
+        popup.innerHTML = "";
+        popup.classList.remove("upload-popup-hiding");
+    }, 350);
 }
 
 
@@ -493,18 +675,20 @@ if (uploadInput) {
 
             if (!files.length) return;
 
-            setStatus(
-                "Uploading " + files.length + " file" +
-                (files.length > 1 ? "s" : "") + "\u2026"
-            );
+            // Clear any previous status
+            setStatus("");
 
-            if (progress) progress.textContent = "Uploading " + files.length + " file(s)...";
+            // Show progress UI
+            _showUploadProgress(files);
 
             // Upload all files in parallel
             var uploadPromises = files.map(function(file, idx) {
-                return uploadFile(file).then(function(doc) {
+                return uploadFileWithProgress(file, function(phase, percent, loadedBytes) {
+                    _updateUploadProgress(idx, phase, percent, loadedBytes);
+                }).then(function(doc) {
                     return { status: "ok", doc: doc, file: file, index: idx };
                 }).catch(function(err) {
+                    _updateUploadProgress(idx, "error", 0, 0);
                     return { status: "fail", error: err, file: file, index: idx };
                 });
             });
@@ -528,15 +712,16 @@ if (uploadInput) {
                 }
             }
 
-            if (progress) {
-                var msg = "\u2713 " + succeeded + " uploaded";
-                if (failed > 0) msg += ", \u2717 " + failed + " failed";
-                progress.textContent = msg;
-            }
-
             renderDocuments();
 
-            setStatus("Upload complete.");
+            if (failed > 0) {
+                setStatus("✗ " + failed + " failed");
+            } else {
+                setStatus("");
+            }
+
+            // Fade out progress after a short delay
+            setTimeout(_clearUploadProgress, 2000);
 
             // Refresh My Documents
             if (typeof loadMyDocuments === "function") loadMyDocuments();

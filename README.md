@@ -1,18 +1,4 @@
-# DocTalk
-
-DocTalk is an AI-powered document intelligence assistant. Users can upload PDF, DOCX, or TXT documents and ask questions about the uploaded document through a chatbot interface.
-
-## Features
-
-- Upload PDF documents
-- Upload DOCX documents
-- Upload TXT documents
-- Extract text from uploaded documents
-- Ask questions about the uploaded document
-- Receive AI-generated responses
-- Web-based frontend
-- FastAPI backend
-- Azure AI Foundry agent integration
+i
 
 ## Technology Stack
 

@@ -282,9 +282,14 @@
                         <p id="my-documents-count" class="my-documents-count">0 documents</p>
                     </div>
 
-                    <label class="primary-button upload-label" for="document-upload-library">
-                        <span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span> Upload Documents
-                    </label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button type="button" id="delete-all-docs-btn" class="danger-button" onclick="confirmDeleteAllDocuments()">
+                            <span class="material-symbols-outlined" style="font-size:16px;">delete_sweep</span> Delete All
+                        </button>
+                        <label class="primary-button upload-label" for="document-upload-library">
+                            <span class="material-symbols-outlined" style="font-size:16px;">cloud_upload</span> Upload Documents
+                        </label>
+                    </div>
                     <input id="document-upload-library" type="file" accept=".pdf,.docx,.txt" multiple hidden>
                 </div>
 
@@ -315,6 +320,9 @@
 
             <!-- ========== INPUT BAR ========== -->
             <div class="input-section">
+
+                <!-- Upload progress popup (slides up from input wrapper) -->
+                <div id="upload-popup" class="upload-popup" aria-live="polite"></div>
 
                 <div class="input-wrapper">
 

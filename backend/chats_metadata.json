@@ -373,5 +373,329 @@
         "timestamp": "2026-09-23T00:38:25.096993"
       }
     ]
+  },
+  "63ec17dd-3244-47c1-81cf-49799f36a2f0": {
+    "conversation_id": "63ec17dd-3244-47c1-81cf-49799f36a2f0",
+    "title": "Compare these documents in detail: Edge ...",
+    "created_at": "2026-09-25T05:02:12.054657",
+    "updated_at": "2026-09-25T05:02:57.839574",
+    "document_ids": [
+      "eb8b134a-b8c1-45b1-b6d1-b30802c82fba"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Compare these documents in detail: Edge Computing, IoT, ML in Networking, Blockchain, and AI Network Management Study Guide.pdf, models_harnesses_platforms_notes.pdf. List the key similarities and differences between them. Use clear sections for Similarities, Differences, and a Summary. Include visual charts where possible (radar, bar, or table).",
+        "timestamp": "2026-09-25T05:02:12.054657"
+      },
+      {
+        "role": "assistant",
+        "content": "Similarities\n- Shared domain: both documents center on AI-driven systems and how different technologies or layers interact (the Study Guide covers Edge, IoT, ML, Blockchain and AI network management; the Notes cover Models -> Harnesses -> Platforms and how systems are composed).\n- Systems thinking: both emphasize integrated architectures (Study Guide shows edge ↔ core ↔ cloud + blockchain ledger; Notes emphasize integrated multiplayer platforms with shared database/ledger).\n- Practical orientation: each offers recommendations for practitioners — the Study Guide lists architecture patterns, pros/cons, and protocol notes (MQTT/CoAP, SDN roles); the Notes give tactical advice for agencies (don’t build platforms, specialize/adopt, wait then commit).\n- Timeline/transition awareness: both have temporal framing — Study Guide frames ongoing tech (edge/cloud hybrid, 5G/6G slices); Notes project a platform maturation window (now → late 2026/early 2027).\n\nRadar comparison (quantitative conversion of qualitative attributes; 1–10)\n```json\n{\"type\":\"radar\",\"title\":\"Document Comparison by Attribute\",\"labels\":[\"Technical Depth\",\"Business/Strategy Focus\",\"Architectural Detail\",\"Implementation Guidance\",\"Examples & Concrete Components\",\"Temporal/Forecast Focus\"],\"datasets\":[{\"label\":\"Edge/IoT/ML Study Guide\",\"values\":[10,3,10,8,9,7],\"max\":10},{\"label\":\"Models→Harnesses→Platforms Notes\",\"values\":[4,9,5,9,8,8],\"max\":10}]}\n```\n\nExplanation: scores reflect content emphasis in each document:\n- Study Guide scores highest on technical depth and architecture (detailed tables on edge/cloud, SDN, protocols, network slicing).\n- Models/Harnesses/Platforms Notes score highest on business/strategy and actionable guidance for agencies (explicit “don’t build the platform — specialize/adopt,” “land-grab” framing, timeline).\n\nDifferences\n- Primary audience\n  - Study Guide: technical practitioners and network/edge/ML engineers (detailed tables, protocol models, SDN architecture).\n  - Notes: agency owners, product/strategy teams (advice on market dynamics, platform adoption, positioning).\n- Core scope\n  - Study Guide: technology stack and integration (Edge servers, IoT devices, ML inference, blockchain ledger, AI network management).\n  - Notes: product-layer evolution and market strategy (Models → Harnesses → Platforms, harness commoditization, platform stickiness).\n- Level of technical detail\n  - Study Guide: high (protocol paradigms, latency numbers, SDN control vs data plane, pros/cons matrix).\n  - Notes: moderate; focused on conceptual flow and strategic recommendations rather than low-level protocols.\n- Recommended action\n  - Study Guide: design integrated hybrid architectures (edge for real-time, cloud for training and long-term storage), address constraints (resource limits, security).\n  - Notes: do not build large platform infrastructure unless large capital; operate in custom-build era now, then migrate to chosen platform when mature.\n- Examples & concrete artifacts\n  - Study Guide: lists concrete components (edge servers, gNodeB, MQTT, CoAP, SDN controllers, blockchain ledger).\n  - Notes: lists phases and examples of products (GPT-3, Claude Code, Codex, Hermes, “Kylon” as an emerging platform).\n- Risk & challenge emphasis\n  - Study Guide: technical challenges (resource constraints at edge, protocol fragmentation, blockchain scalability).\n  - Notes: market dynamics and organizational risk (high switching cost of platforms, land-grab among well-capitalized players).\n\nComparison table (selected attributes and direct text-based content from each document)\n```json\n{\"type\":\"table\",\"title\":\"Side-by-side Comparison\",\"headers\":[\"Attribute\",\"Edge/IoT/ML Study Guide (document)\",\"Models→Harnesses→Platforms Notes (document)\"],\"rows\":[[\"Primary focus\",\"Edge, IoT, ML, Blockchain, AI network management; architecture & protocols (e.g., MQTT, CoAP, SDN, 5G/6G slicing)\",\"Evolution of AI stacks: Models → Harnesses → Platforms; platform strategies and agency advice\"],[\"Recommended action\",\"Adopt hybrid edge↔cloud architectures; use edge for real-time inference, cloud for training; note protocol tradeoffs\",\"Don’t build platform infra yourself; specialize on a platform or adopt one when mature; agencies should offer implementation/management\"],[\"Examples cited\",\"Edge servers, IoT sensors, SDN controllers, blockchain ledger, 5G gNodeB\",\"GPT-3 (models), Claude Code/Codex/Hermes (harnesses), 'Kylon' (platform example)\"],[\"Temporal framing\",\"Focus on current architecture patterns and near-term network tech like 5G/6G; practical constraints (latency 1–10 ms at edge)\",\"Phase transition: harness→platform now → projected maturity late 2026/early 2027; platforms will be sticky/land-grab\"],[\"Key challenges highlighted\",\"Resource constraints at edge; protocol fragmentation; blockchain latency/scalability; integration complexity with legacy systems\",\"High switching cost/platform stickiness; commoditization of harnesses; capital-intensive platform builds\"]]}\n```\n\nSummary\n- Complementary rather than redundant: the Study Guide is a technology- and architecture-focused reference for building and operating distributed AI/network systems (edge, IoT, ML, blockchain, AI network management). The Models→Harnesses→Platforms Notes is a strategy-and-go-to-market oriented brief describing how AI tooling will recompose into platforms and what agencies should do in response.\n- Practical takeaway: use the Study Guide to inform system design (how to construct the hybrid edge/cloud stacks, select protocols, understand constraints). Use the Notes to guide organizational strategy (when to adopt vs build platforms, how agencies can position services).\n- Visual summary: the radar and comparison table above quantify and make explicit where each document’s emphases lie (technical/architectural vs business/strategic).",
+        "timestamp": "2026-09-25T05:02:40.788915"
+      },
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T05:02:57.839574"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T05:03:07.178804"
+      }
+    ]
+  },
+  "6a77376d-84b7-4baa-9771-936fdd42998f": {
+    "conversation_id": "6a77376d-84b7-4baa-9771-936fdd42998f",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T05:03:35.108918",
+    "updated_at": "2026-09-25T05:03:58.497599",
+    "document_ids": [
+      "89975542-a551-4bb5-ae58-67c0cd17ee29"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T05:03:35.108918"
+      },
+      {
+        "role": "assistant",
+        "content": "- Scope: The guide covers edge computing, IoT, machine learning in networking, blockchain, and AI-driven network management, with protocol-level details (IPsec AH/ESP) and a rapid revision matrix summarizing core concepts, advantages, and challenges.\n\n- IPsec AH: RFC 4302; provides data-origin authentication, integrity, and anti-replay protection. Crucial limitation — no encryption/confidentiality (payload remains plaintext). Key AH header fields: Next Header, Payload Length, Reserved, SPI, Sequence Number, and Integrity Check Value (ICV).\n\n- IPsec ESP: Header (unencrypted) contains SPI and Sequence Number; Payload & Trailer are encrypted (payload data, padding, pad length, next header); ESP Auth contains an ICV (HMAC) covering header, payload and trailer. ESP does not authenticate the outer IP header (allows NAT traversal via UDP port 4500).\n\n- Edge vs Cloud (concise comparison): Edge processes near data source with ultra-low latency (1–10 ms), lower bandwidth use, distributed scaling, lower Internet dependency and higher data privacy; Cloud is centralized with higher latency (50–250+ ms), higher bandwidth consumption, centralized scaling, and greater WAN dependency.\n\n- Blockchain & Smart Contracts: Uses PKI/digital signatures for trust. Smart contracts enable self-executing policies for dynamic SLAs, automated bandwidth trading, and dynamic spectrum leasing without trusted intermediaries. Blockchain offers tamper-proof trust but faces high latency and scalability bottlenecks.\n\n- AI for Network Management: Modernizes the FCAPS framework toward closed-loop, zero-touch control and self-healing networks, improving resilience; key challenges include model explainability, data quality, and integration complexity with legacy systems.\n\n- Rapid revision highlights: Edge — ultra-low latency but resource constraints; IoT — ubiquitous sensing with protocol fragmentation and security risks; ML — adaptive decision-making with explainability/data-quality issues; Blockchain — decentralized trust with scalability/latency limits; AI network management — self-healing but integration complexity.",
+        "timestamp": "2026-09-25T05:03:45.994737"
+      },
+      {
+        "role": "user",
+        "content": "give me visual artifacts\n\nIMPORTANT: You MUST respond with actual chart data in JSON format wrapped in ```json code fences. Use one of these chart types: bar, line, pie, table, process, timeline. Format example for bar chart: ```json\n{\"type\":\"bar\",\"title\":\"Chart Title\",\"labels\":[\"A\",\"B\",\"C\"],\"values\":[10,20,30]}\n``` For comparison/table: ```json\n{\"type\":\"table\",\"title\":\"Comparison\",\"headers\":[\"Attribute\",\"Edge\",\"Cloud\"],\"rows\":[[\"Latency\",\"1-10ms\",\"50-250ms\"],[\"Privacy\",\"High\",\"Moderate\"]]}\n``` For process/flow: ```json\n{\"type\":\"process\",\"title\":\"Flow\",\"steps\":[\"Step 1\",\"Step 2\",\"Step 3\"]}\n``` For pie: ```json\n{\"type\":\"pie\",\"title\":\"Distribution\",\"labels\":[\"A\",\"B\"],\"values\":[60,40]}\n``` For timeline: ```json\n{\"type\":\"timeline\",\"title\":\"Timeline\",\"events\":[{\"date\":\"Phase 1\",\"description\":\"Description\"}]}\n``` You can include MULTIPLE ```json blocks if the user asks for multiple charts. Include a brief text explanation before each chart. DO NOT just describe charts in text — you MUST include the JSON data so the charts render visually.",
+        "timestamp": "2026-09-25T05:03:58.497599"
+      },
+      {
+        "role": "assistant",
+        "content": "Here are visual artifacts based on the document excerpts (Edge vs Cloud attributes, architecture, and core drivers). First is a quick comparison table drawn directly from the document, then quantified bar charts (converted qualitative values to 1-10 scores), and finally a process flow for edge data handling.\n\nTable: direct attribute comparison from the document\n```json\n{\"type\":\"table\",\"title\":\"Edge vs Cloud - Attribute Comparison\",\"headers\":[\"Attribute\",\"Edge Computing\",\"Cloud Computing\"],\"rows\":[[\"Processing Location\",\"Near the data source / network periphery\",\"Centralized data centers\"],[\"Latency\",\"Ultra-low (1-10 ms)\",\"Moderate to high (50-250+ ms)\"],[\"Bandwidth Consumption\",\"Low (filtered/aggregated data sent downstream)\",\"High (raw data streams transmitted continuously)\"],[\"Scalability\",\"Distributed, localized scaling\",\"Centralized, horizontal server scaling\"],[\"Internet Dependency\",\"Low (operates autonomously during link drops)\",\"Critical (full dependency on WAN availability)\"],[\"Data Privacy\",\"High (data remains inside)\",\"Moderate (data exposed)\"]]}\n```\n\nBar chart: Edge computing scores (converted from qualitative attributes; higher = better)\n```json\n{\"type\":\"bar\",\"title\":\"Edge Computing - Attribute Scores (1-10)\",\"labels\":[\"Latency\",\"Bandwidth Consumption\",\"Scalability\",\"Internet Dependency\",\"Data Privacy\"],\"values\":[10,9,6,9,9]}\n```\n\nBar chart: Cloud computing scores (converted from qualitative attributes; higher = better)\n```json\n{\"type\":\"bar\",\"title\":\"Cloud Computing - Attribute Scores (1-10)\",\"labels\":[\"Latency\",\"Bandwidth Consumption\",\"Scalability\",\"Internet Dependency\",\"Data Privacy\"],\"values\":[3,2,9,2,5]}\n```\n\nProcess/Flow: typical edge data flow (document describes interception, filtering, local processing, then selective sending to cloud)\n```json\n{\"type\":\"process\",\"title\":\"Edge Data Flow\",\"steps\":[\"IoT Devices / Sensors\",\"Edge Node (intercept, filter, local ML inference)\",\"Immediate response to local actuator\",\"Send aggregated/filtered data to Cloud / Data Center\"]}\n```",
+        "timestamp": "2026-09-25T05:04:11.988998"
+      }
+    ]
+  },
+  "f140a755-3d45-43f2-b986-07fc5f66ae57": {
+    "conversation_id": "f140a755-3d45-43f2-b986-07fc5f66ae57",
+    "title": "Analyze the uploaded document and return...",
+    "created_at": "2026-09-25T05:04:17.919188",
+    "updated_at": "2026-09-25T05:04:17.919188",
+    "document_ids": [
+      "89975542-a551-4bb5-ae58-67c0cd17ee29"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Analyze the uploaded document and return ONLY valid JSON (no markdown, no code fences) in this exact format: {\"title\": \"Document Title\", \"subtitle\": \"One-line description\", \"keyTopics\": [\"Topic 1\", \"Topic 2\", \"Topic 3\", \"Topic 4\", \"Topic 5\", \"Topic 6\"], \"stats\": [{\"label\": \"Stat Name\", \"value\": \"Stat Value\"}, {\"label\": \"Stat Name\", \"value\": \"Stat Value\"}, {\"label\": \"Stat Name\", \"value\": \"Stat Value\"}], \"summary\": \"A 2-3 sentence summary of the document.\"}",
+        "timestamp": "2026-09-25T05:04:17.919188"
+      },
+      {
+        "role": "assistant",
+        "content": "{\"title\": \"Edge Computing, IoT, ML in Networking, Blockchain, and AI Network Management Study Guide\", \"subtitle\": \"Concise study guide on edge/cloud architectures, IoT protocols, machine learning, blockchain, SDN, and AI-driven network management.\", \"keyTopics\": [\"Edge Computing\", \"IoT Protocols and Devices\", \"Machine Learning in Networking\", \"Blockchain Trust Models\", \"AI Network Management (Closed-loop)\", \"SDN Architecture and Network Security\"], \"stats\": [{\"label\": \"Core technologies listed\", \"value\": \"5 (Edge, IoT, Machine Learning, Blockchain, AI Management)\"}, {\"label\": \"IoT protocols referenced\", \"value\": \"2 (MQTT, CoAP)\"}, {\"label\": \"ESP sections detailed\", \"value\": \"3 (Header, Payload & Trailer, Auth)\"}], \"summary\": \"The document is a study guide covering edge computing, IoT protocols, machine learning applications, blockchain trust models, SDN, and AI-driven network management. It emphasizes hybrid edge-cloud operation for low-latency tasks, outlines IoT protocol paradigms (MQTT publish/subscribe, CoAP request/response), summarizes ML learning types, and highlights blockchain and SDN roles in providing trust and control while noting security and integration challenges.\"}",
+        "timestamp": "2026-09-25T05:04:31.855338"
+      }
+    ]
+  },
+  "70548873-4f33-4be1-9b96-daa6f9646f7d": {
+    "conversation_id": "70548873-4f33-4be1-9b96-daa6f9646f7d",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T07:36:56.433157",
+    "updated_at": "2026-09-25T07:37:15.485689",
+    "document_ids": [
+      "48dd727f-8b77-47e7-807e-8e1a5a077f26"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T07:36:56.433157"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T07:36:59.360280"
+      },
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T07:37:07.145637"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T07:37:08.550367"
+      },
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T07:37:15.485689"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T07:37:16.540028"
+      }
+    ]
+  },
+  "488ccfd5-16f7-4ed8-99e8-14bfed5c6f60": {
+    "conversation_id": "488ccfd5-16f7-4ed8-99e8-14bfed5c6f60",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T07:37:34.934367",
+    "updated_at": "2026-09-25T07:37:34.934367",
+    "document_ids": [
+      "6727f813-599c-4674-8bc9-95ae8890878b"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T07:37:34.934367"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T07:37:36.144960"
+      }
+    ]
+  },
+  "38e1c331-c944-487e-9704-cf89b79e2e4c": {
+    "conversation_id": "38e1c331-c944-487e-9704-cf89b79e2e4c",
+    "title": "Compare these documents in detail: model...",
+    "created_at": "2026-09-25T07:40:13.562830",
+    "updated_at": "2026-09-25T07:40:27.729767",
+    "document_ids": [
+      "7637469c-64d6-464e-b603-d80e120e441d",
+      "8ea26d14-3b0d-4fe9-8a83-448fc4f211cd"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Compare these documents in detail: models_harnesses_platforms_notes.pdf, Piyush_Dua_Resume.pdf. List the key similarities and differences between them. Use clear sections for Similarities, Differences, and a Summary. Include visual charts where possible (radar, bar, or table).",
+        "timestamp": "2026-09-25T07:40:13.562830"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T07:40:16.011065"
+      },
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T07:40:27.729767"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T07:40:30.127743"
+      }
+    ]
+  },
+  "e4b29e5d-d7e1-4704-840a-dc93fbaedadc": {
+    "conversation_id": "e4b29e5d-d7e1-4704-840a-dc93fbaedadc",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T08:22:12.500099",
+    "updated_at": "2026-09-25T08:22:12.500099",
+    "document_ids": [
+      "1943caee-3fe2-4c10-bfca-928300c1779b"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T08:22:12.500099"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T08:22:13.797435"
+      }
+    ]
+  },
+  "f9ada6ad-8282-467e-b45f-30df8d43f32c": {
+    "conversation_id": "f9ada6ad-8282-467e-b45f-30df8d43f32c",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T08:26:34.511785",
+    "updated_at": "2026-09-25T08:26:34.511785",
+    "document_ids": [
+      "428aab84-95c7-4891-a846-dfbd9b385286"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T08:26:34.511785"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T08:26:35.805548"
+      }
+    ]
+  },
+  "53deb8bf-eb65-4313-a03e-ea7a57cb992e": {
+    "conversation_id": "53deb8bf-eb65-4313-a03e-ea7a57cb992e",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T08:26:59.326064",
+    "updated_at": "2026-09-25T08:26:59.326064",
+    "document_ids": [
+      "babeefd2-5cc5-4810-928d-d59be38e475a"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T08:26:59.326064"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T08:27:00.503251"
+      }
+    ]
+  },
+  "133a64bf-e29d-4412-b654-4c453ac4ff12": {
+    "conversation_id": "133a64bf-e29d-4412-b654-4c453ac4ff12",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T08:29:48.564073",
+    "updated_at": "2026-09-25T08:29:48.564073",
+    "document_ids": [
+      "820f8fdc-a174-4268-90d8-2993dcd168ec"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T08:29:48.564073"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T08:29:50.685743"
+      }
+    ]
+  },
+  "f9e8387b-8d3e-4f50-81ca-03182260c840": {
+    "conversation_id": "f9e8387b-8d3e-4f50-81ca-03182260c840",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T08:33:02.011635",
+    "updated_at": "2026-09-25T08:37:21.361543",
+    "document_ids": [
+      "13f1bf38-ae79-4955-846a-7cece712ac5b"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T08:33:02.011635"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T08:33:07.787515"
+      },
+      {
+        "role": "user",
+        "content": "now give me a concise summary of uploaded document",
+        "timestamp": "2026-09-25T08:37:21.361543"
+      },
+      {
+        "role": "assistant",
+        "content": "I could not find that information in the uploaded documents.",
+        "timestamp": "2026-09-25T08:37:22.901629"
+      }
+    ]
+  },
+  "901e4c64-b516-4be3-acc7-b98eac227055": {
+    "conversation_id": "901e4c64-b516-4be3-acc7-b98eac227055",
+    "title": "Give me a concise summary of the uploade...",
+    "created_at": "2026-09-25T08:37:46.615238",
+    "updated_at": "2026-09-25T08:38:26.007636",
+    "document_ids": [
+      "aeaa3b7e-ff29-42f1-bae8-bb07e3218b67",
+      "7b79cafa-6758-46fa-9917-818354732b5c"
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": "Give me a concise summary of the uploaded document.",
+        "timestamp": "2026-09-25T08:37:46.615238"
+      },
+      {
+        "role": "assistant",
+        "content": "Piyush Dua — 3rd-year B.E. Computer Science & Engineering (AI & ML) student at Chitkara University (CGPA 8.74/10) from Ladwa, Kurukshetra. Motivated toward AI/ML and systems programming with an objective to intern on DDN’s Lustre File System team.\n\nKey skills:\n- Languages: C, Python\n- Core CS: Data structures & algorithms; OS concepts (processes/threads, memory management, file systems, synchronization/concurrency)\n- Linux/Unix familiarity with exposure to kernel internals; networking fundamentals; Git\n- Distributed & storage systems concepts, parallel file systems, HPC environments\n- Scripting & automation: Python, shell\n\nNotable projects:\n- AI Voice Agent for automated lead generation (conversational AI integrated with backend logic)\n- E-Badge System (IoT e-paper digital ID; placed 3rd in E-Badge Project Challenge)\n- Credit Fraud Detection ML project (preprocessing, feature engineering, classification)\n\nCertifications:\n- Microsoft: DP-900 (Azure Data Fundamentals), AZ-900 (Azure Fundamentals), AI-900 (Azure AI Fundamentals)\n\nContact & online profiles listed: phone, email, LinkedIn, GitHub.",
+        "timestamp": "2026-09-25T08:37:57.281422"
+      },
+      {
+        "role": "user",
+        "content": "Compare these documents in detail: Piyush_Dua_Resume.pdf, Edge Computing, IoT, ML in Networking, Blockchain, and AI Network Management Study Guide.pdf. List the key similarities and differences between them. Use clear sections for Similarities, Differences, and a Summary. Include visual charts where possible (radar, bar, or table).",
+        "timestamp": "2026-09-25T08:38:26.007636"
+      },
+      {
+        "role": "assistant",
+        "content": "Similarities\n- Both documents target a technical/engineering audience and emphasize systems-level topics (operating systems, networking, distributed systems).\n- Both reference edge/cloud concepts and distributed systems thinking: the resume lists \"Distributed & Storage Systems\" and \"HPC environments,\" while the study guide focuses on Edge, IoT, ML, Blockchain and AI-managed networks.\n- Both are structured and goal-oriented: the resume is organized for hiring (skills, projects, certifications), the study guide is organized for learning (topics, tables, rapid revision matrix).\n\nRadar comparison (converted qualitative attributes to numeric scores 1–10):\n```json\n{\"type\":\"radar\",\"title\":\"Document Attribute Comparison\",\"labels\":[\"Technical Depth\",\"Topic Breadth\",\"Practical Projects / Examples\",\"Certifications\",\"Visuals/Diagrams\",\"Readability/Structure\",\"Target Audience Fit\"],\"datasets\":[{\"label\":\"Piyush_Dua_Resume.pdf\",\"values\":[5,4,8,7,2,8,8],\"max\":10},{\"label\":\"Edge + IoT + ML Study Guide.pdf\",\"values\":[9,9,6,1,9,7,8],\"max\":10}]}\n```\nExplanation: The radar shows the resume scores higher on practical projects and certifications while the study guide scores higher on technical depth, topic breadth, and visuals/diagrams.\n\nDifferences\n- Purpose and Primary Use:\n  - Resume (Piyush_Dua_Resume.pdf): A personal CV for a candidate — highlights education (B.E., CGPA 8.74), programming skills (C, Python), OS & kernel exposure, projects (Credit Fraud Detection, AI Voice Agent, E‑Badge), and certifications (DP-900, AZ-900, AI-900).\n  - Study Guide (Edge Computing, IoT, ML... Study Guide.pdf): Educational/technical reference — explains concepts (Edge vs Cloud, SDN, 5G/6G integration), contains architecture diagrams, tables, and a rapid revision matrix.\n- Content Depth and Scope:\n  - Resume: Narrower scope focused on the candidate’s competencies, practical projects and short descriptions. Surface-level technical mentions (skills & exposure).\n  - Study Guide: Wide and deep scope across multiple technologies (Edge, IoT, ML, Blockchain, AI network management), includes architectural diagrams, protocol notes (MQTT vs CoAP), and challenges/advantages.\n- Format & Length:\n  - Resume: One-page structured CV with bulleted sections.\n  - Study Guide: Multi-page technical document (excerpts include pages 9, 15–17), with tables, diagrams and revision matrices.\n- Visuals and Teaching Aids:\n  - Resume: Minimal visual elements (tabular listing of skills).\n  - Study Guide: Multiple tables, architecture diagrams, comparison tables, and a rapid revision matrix for study.\n- Certifications & Credentials:\n  - Resume: Explicit certifications relevant to cloud and AI fundamentals (three Microsoft certs).\n  - Study Guide: Does not list personal certifications — focuses on technology explanations.\n- Practical vs Theoretical Emphasis:\n  - Resume: Emphasizes projects and practical implementations (E-Badge hardware, AI voice agent).\n  - Study Guide: Emphasizes theoretical concepts, protocols, and system design trade-offs.\n\nBar chart summarizing measurable counts (pages, projects/examples, certifications, tables/diagrams):\n```json\n{\"type\":\"bar\",\"title\":\"Document Measurable Counts\",\"labels\":[\"Pages (approx)\",\"Project / Example Count\",\"Certifications Count\",\"Tables/Diagrams Count\"],\"values\":[1,3,3,1,17,5,1,3]}\n```\nExplanation: First four values correspond to Piyush_Dua_Resume.pdf (Pages=1, Projects=3, Certs=3, Visuals=1). Next four values correspond to Study Guide (Pages≈17, Examples=5, Certs=1 (not personal; 0–1), Visuals=3 tables/diagrams). (Bar order groups resume then study guide.)\n\nDetailed side-by-side table (concise comparison):\n```json\n{\"type\":\"table\",\"title\":\"Side-by-Side Comparison\",\"headers\":[\"Attribute\",\"Piyush_Dua_Resume.pdf\",\"Edge+IoT+ML Study Guide.pdf\"],\"rows\":[[\"Purpose\",\"Job application / candidate profile\",\"Educational technical reference\"],[\"Audience\",\"Recruiters / Hiring managers / Engineers\",\"Students, researchers, network engineers\"],[\"Format\",\"One-page CV; bulleted sections; brief project summaries\",\"Multi-page guide; tables, diagrams, rapid revision matrix\"],[\"Key Topics Covered\",\"C, Python, OS internals, Data Structures, Distributed & Storage Systems, Projects\",\"Edge computing, IoT, ML, Blockchain, SDN, 5G/6G, AI management\"],[\"Depth\",\"Practical/project-focused; concise skill listing\",\"Conceptual and architectural depth; comparative analyses\"],[\"Visuals\",\"Minimal (skill table)\",\"Multiple tables and architecture diagrams\"],[\"Certifications\",\"DP-900, AZ-900, AI-900 (3 certs)\",\"None listed (document content focused)\"],[\"Usefulness\",\"Hiring/interview prep; portfolio of projects\",\"Study, design reference, network architecture planning\"]]}\n```\n\nSummary\n- Overlap: Both documents inhabit the same technical ecosystem (distributed systems, networking, edge/cloud concepts) and would be complementary: the resume shows practical experience and readiness; the study guide supplies deep conceptual background and reference material.\n- Distinction: The resume is a concise personal credential and project showcase intended to get the candidate noticed; the study guide is an in-depth topical resource aimed at teaching or guiding system design.\n- Recommendation: For an engineer hiring decision, use the resume to evaluate candidate fit and the study guide to validate depth/terminology when assessing applied knowledge in interviews. For learning, pair the study guide’s theory with the resume’s projects as practical examples.\n\nIf you’d like, I can generate an alternate radar or a focused chart comparing specific topic overlaps (e.g., Edge vs Cloud coverage, IoT protocols, ML emphasis) using numeric scores derived from the documents.",
+        "timestamp": "2026-09-25T08:38:46.228577"
+      }
+    ]
   }
 }
